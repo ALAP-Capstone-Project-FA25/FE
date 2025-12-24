@@ -42,6 +42,7 @@ import __helpers from '@/helpers';
 import { useSelector } from 'react-redux';
 import type { RootState } from '@/redux/store';
 import { useGetMyInfo } from '@/queries/user.query';
+import { useState, useEffect } from 'react';
 
 export const company = {
   name: 'ALAP',
@@ -54,6 +55,7 @@ export default function AppSidebar() {
   const router = useRouter();
   const {} = useGetMyInfo();
   const infoUser = useSelector((state: RootState) => state.auth.infoUser);
+  const [openItems, setOpenItems] = useState<Record<string, boolean>>({});
 
   const handleLogout = () => {
     __helpers.cookie_delete('AT');
@@ -63,6 +65,22 @@ export default function AppSidebar() {
   const isAdmin = infoUser?.role == USER_ROLE.ADMIN;
 
   const navItems = isAdmin ? adminNavItems : managerNavItems;
+
+  // Tự động mở menu chứa route hiện tại
+  useEffect(() => {
+    const newOpenItems: Record<string, boolean> = {};
+    navItems.forEach((parent) => {
+      parent.detail.forEach((item) => {
+        if (item.items && item.items.length > 0) {
+          const hasActiveSubItem = item.items.some((subItem) => pathname === subItem.url);
+          if (hasActiveSubItem || pathname === item.url) {
+            newOpenItems[item.title] = true;
+          }
+        }
+      });
+    });
+    setOpenItems(newOpenItems);
+  }, [pathname, navItems]);
 
   const getInitials = (name) => {
     if (!name) return 'U';
@@ -109,7 +127,10 @@ export default function AppSidebar() {
                   <Collapsible
                     key={item.title}
                     asChild
-                    defaultOpen={item.isActive}
+                    open={openItems[item.title] || false}
+                    onOpenChange={(open) => 
+                      setOpenItems(prev => ({ ...prev, [item.title]: open }))
+                    }
                     className="group/collapsible"
                   >
                     <SidebarMenuItem>
@@ -153,9 +174,12 @@ export default function AppSidebar() {
                                       : 'hover:-50 dark:hover:-900/10'
                                   }`}
                                 >
-                                  <a href={subItem.url}>
+                                  <button
+                                    onClick={() => router.push(subItem.url)}
+                                    className="flex w-full items-center"
+                                  >
                                     <span>{subItem.title}</span>
-                                  </a>
+                                  </button>
                                 </SidebarMenuSubButton>
                               </SidebarMenuSubItem>
                             );
@@ -174,7 +198,10 @@ export default function AppSidebar() {
                         isActive ? '-100 dark:-900/20 -800 dark:-100' : ''
                       }`}
                     >
-                      <a href={item.url}>
+                      <button
+                        onClick={() => router.push(item.url)}
+                        className="flex w-full items-center"
+                      >
                         <div
                           className={`mr-3 flex size-6 items-center justify-center rounded-md ${
                             isActive
@@ -185,7 +212,7 @@ export default function AppSidebar() {
                           <Icon className="size-5" />
                         </div>
                         <span className="font-medium">{item.title}</span>
-                      </a>
+                      </button>
                     </SidebarMenuButton>
                   </SidebarMenuItem>
                 );
