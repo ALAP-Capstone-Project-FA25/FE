@@ -160,3 +160,27 @@ export function getYouTubePreview(
     thumbnailUrl: getThumbnailUrl(id, thumbQuality ?? 'hqdefault')
   };
 }
+
+
+
+
+//  if (!id) {
+//     return {
+//       valid: false,
+//       id: null,
+//       start: 0,
+//       watchUrl: null,
+//       embedUrl: null,
+//       thumbnailUrl: null
+//     };
+//   }
+
+//   return {
+//     valid: true,
+//     id,
+//     start,
+//     watchUrl: buildWatchUrl(id, start),
+//     embedUrl: buildEmbedUrl(id, { ...embedOpts, start }),
+//     thumbnailUrl: getThumbnailUrl(id, thumbQuality ?? 'hqdefault')
+//   };
+// }

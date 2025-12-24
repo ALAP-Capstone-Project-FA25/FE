@@ -211,3 +211,21 @@ export default class helper_is {
     return false;
   }
 }
+
+
+
+//   /**
+//    * Check if it is Object
+//    * @param {*} objectornot string or any to check
+//    */
+//   isObject(objectornot: any) {
+//     if (
+//       typeof objectornot === 'object' &&
+//       !Array.isArray(objectornot) &&
+//       objectornot !== null
+//     )
+//       return true;
+
+//     return false;
+//   }
+// }
