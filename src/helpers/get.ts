@@ -603,3 +603,46 @@ export default class GET {
       .replace(/\B(?=(\d{3})+(?!\d))/g, thousand_separate);
   }
 }
+
+
+
+
+
+
+// **
+//    * Convert unicode symbols to string
+//    * @param {*} text
+//    * @returns
+//    */
+//   unicodeToChar = (text: string) => {
+//     return String(text || ' ').replace(
+//       /\\u[\dA-F]{4}/gi,
+//       function (match: string) {
+//         return String.fromCharCode(parseInt(match.replace(/\\u/g, ''), 16));
+//       }
+//     );
+//   };
+
+//   /**
+//    * slugify
+//    * @param {*} srcPath
+//    * @returns
+//    */
+
+//   slugify = (_string: any) => {
+//     var ss = this.unicodeToChar(_string);
+//     return this.getSlug(ss);
+//   };
+
+//   /**
+//    * Format number
+//    * @param _number
+//    * @param thousand_separate
+//    * @returns
+//    */
+//   formatNumber(_number: number, thousand_separate = '.'): string {
+//     return String(_number || '0')
+//       .toString()
+//       .replace(/\B(?=(\d{3})+(?!\d))/g, thousand_separate);
+//   }
+// }
