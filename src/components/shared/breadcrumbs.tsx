@@ -20,18 +20,19 @@ export function Breadcrumbs({ items }: { items: BreadcrumbItemProps[] }) {
       <BreadcrumbList>
         {items.map((item, index) => (
           <Fragment key={item.title}>
-            {index !== items.length - 1 && (
-              <BreadcrumbItem>
-                <BreadcrumbLink href={item.link}>{item.title}</BreadcrumbLink>
-              </BreadcrumbItem>
-            )}
-            {index < items.length - 1 && (
-              <BreadcrumbSeparator>
-                <ChevronRight />
-              </BreadcrumbSeparator>
-            )}
-            {index === items.length - 1 && (
+            {index === items.length - 1 ? (
+              // Item cuối cùng - hiển thị như page hiện tại
               <BreadcrumbPage>{item.title}</BreadcrumbPage>
+            ) : (
+              // Các item khác - hiển thị như link
+              <>
+                <BreadcrumbItem>
+                  <BreadcrumbLink href={item.link}>{item.title}</BreadcrumbLink>
+                </BreadcrumbItem>
+                <BreadcrumbSeparator>
+                  <ChevronRight />
+                </BreadcrumbSeparator>
+              </>
             )}
           </Fragment>
         ))}

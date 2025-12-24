@@ -48,7 +48,9 @@ import {
   MessageSquare,
   Users,
   BookOpen,
-  Network
+  Network,
+  Mic,
+  StickyNote
 } from 'lucide-react';
 
 export type Icon = LucideIcon;
@@ -58,7 +60,9 @@ export const Icons = {
   syringe: Syringe, // Tiêm chủng
   list: ListOrdered,
   dog: Dog, // Vật nuôi
+  stickyNote: StickyNote,
   network: Network, // Mạng lưới
+  mic: Mic, // Speaker
   user2: User2,
   users: Users,
   userCog: UserCog,

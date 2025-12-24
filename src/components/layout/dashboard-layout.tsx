@@ -1,5 +1,6 @@
 import __helpers from '@/helpers';
 import Header from './header';
+import AccountStatusChecker from '../auth/AccountStatusChecker';
 
 export default function DashboardLayout({
   children
@@ -10,6 +11,7 @@ export default function DashboardLayout({
     <div className="h-full min-h-screen  bg-gray-200/50">
       <Header />
       <main className="mx-auto ml-[80px]">{children}</main>
+      <AccountStatusChecker />
       {/* <Footer /> */}
     </div>
   );

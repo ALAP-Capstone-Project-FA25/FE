@@ -1,10 +1,10 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { useDropzone } from 'react-dropzone';
 import { Upload, X, File, Image, CheckCircle, AlertCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Progress } from '../ui/progress';
 import { Alert, AlertDescription } from '../ui/alert';
-import BaseRequest from '../../config/axios.config';
+
 
 interface SingleFileUploadProps {
   onFileUploaded: (fileUrl: string) => void;
@@ -13,6 +13,8 @@ interface SingleFileUploadProps {
   className?: string;
   placeholder?: string;
   autoUpload?: boolean;
+  initialImageUrl?: string;
+  key?: string | number; // For forcing re-render
 }
 
 interface UploadState {
@@ -30,14 +32,27 @@ export default function SingleFileUpload({
   maxFileSize = 10,
   className = '',
   placeholder = 'Kéo thả file hoặc click để chọn',
-  autoUpload = false
+  autoUpload = false,
+  initialImageUrl
 }: SingleFileUploadProps) {
   const [uploadState, setUploadState] = useState<UploadState>({
     file: null,
     preview: null,
     status: 'idle',
-    progress: 0
+    progress: 0,
+    url: initialImageUrl
   });
+
+  // Update upload state when initialImageUrl changes
+  useEffect(() => {
+    if (initialImageUrl && !uploadState.file) {
+      setUploadState(prev => ({
+        ...prev,
+        url: initialImageUrl,
+        status: initialImageUrl ? 'success' : 'idle'
+      }));
+    }
+  }, [initialImageUrl, uploadState.file]);
 
   const onDrop = useCallback(
     async (acceptedFiles: File[]) => {
@@ -53,7 +68,7 @@ export default function SingleFileUpload({
       });
 
       if (autoUpload) {
-        await uploadFile(file, preview);
+        await uploadFile(file);
       }
     },
     [autoUpload]
@@ -70,23 +85,32 @@ export default function SingleFileUpload({
     disabled: uploadState.status === 'uploading'
   });
 
-  const uploadFile = async (file: File, preview: string) => {
+  const uploadFile = async (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
 
     try {
       setUploadState((prev) => ({ ...prev, status: 'uploading', progress: 0 }));
 
-      const [error, response] = await BaseRequest.Post('/upload', formData);
+      const response = await fetch('https://upload.autopass.blog/upload', {
+        method: 'POST',
+        body: formData,
+      });
 
-      if (error) {
-        throw new Error(error?.message || 'Upload failed');
+      if (!response.ok) {
+        throw new Error(`Upload failed: ${response.statusText}`);
       }
-      console.log(response);
 
-      const fileUrl = response?.downloadUrl;
+      const responseDataKemData = await response.json();
+      const responseData = responseDataKemData.data;
+
+      let fileUrl = '';
+      if (responseData) {
+          fileUrl = responseData.downloadUrl;
+      }
+
       if (!fileUrl) {
-        throw new Error('No file URL returned');
+        throw new Error('No file URL returned from server');
       }
 
       setUploadState((prev) => ({
@@ -98,17 +122,18 @@ export default function SingleFileUpload({
 
       onFileUploaded(fileUrl);
     } catch (error: any) {
+      console.error('Upload error:', error);
       setUploadState((prev) => ({
         ...prev,
         status: 'error',
-        error: error.message
+        error: error.message || 'Upload failed'
       }));
     }
   };
 
   const handleManualUpload = async () => {
     if (!uploadState.file) return;
-    await uploadFile(uploadState.file, uploadState.preview!);
+    await uploadFile(uploadState.file);
   };
 
   const clearFile = () => {
@@ -119,7 +144,8 @@ export default function SingleFileUpload({
       file: null,
       preview: null,
       status: 'idle',
-      progress: 0
+      progress: 0,
+      url: initialImageUrl // Keep initial image if exists
     });
   };
 
@@ -171,6 +197,35 @@ export default function SingleFileUpload({
         </p>
         <p className="mt-1 text-xs text-gray-500">Tối đa {maxFileSize}MB</p>
       </div>
+
+      {/* Initial Image Preview (when no file selected but has initial URL) */}
+      {!uploadState.file && uploadState.url && (
+        <div className="space-y-3">
+          <div className="rounded-lg border p-3">
+            <p className="mb-2 text-sm font-medium text-gray-700">
+              Ảnh hiện tại:
+            </p>
+            <div className="flex items-center space-x-3">
+              <img
+                src={uploadState.url}
+                alt="Current image"
+                className="h-32 w-32 rounded object-cover"
+              />
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setUploadState(prev => ({ ...prev, url: undefined, status: 'idle' }));
+                  onFileUploaded(''); // Clear the image URL in parent component
+                }}
+                className="h-8 w-8 p-0"
+              >
+                <X className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* File Preview */}
       {uploadState.file && (

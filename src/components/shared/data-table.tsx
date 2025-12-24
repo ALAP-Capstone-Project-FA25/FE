@@ -30,7 +30,7 @@ import {
   getSortedRowModel,
   SortingState
 } from '@tanstack/react-table';
-import { ChevronLeftIcon, ChevronRightIcon } from 'lucide-react';
+import { ChevronLeftIcon, ChevronRightIcon, Plus } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { InputSearch } from './input-search';
 
@@ -40,9 +40,12 @@ interface DataTableProps<TData, TValue> {
   pageSizeOptions?: number[];
   pageCount: number;
   showAdd?: boolean;
+  onAdd?: () => void;
+  addButtonText?: string;
   heightTable?: string;
   placeHolderInputSearch?: string;
   showSearch?: boolean;
+  meta?: any;
 }
 
 export default function DataTable<TData, TValue>({
@@ -51,9 +54,12 @@ export default function DataTable<TData, TValue>({
   pageCount,
   pageSizeOptions = [10, 20, 30, 40, 50],
   showAdd = true,
+  onAdd,
+  addButtonText = 'Thêm mới',
   heightTable = '80dvh',
   placeHolderInputSearch,
-  showSearch = false
+  showSearch = false,
+  meta
 }: DataTableProps<TData, TValue>) {
   const [searchParams, setSearchParams] = useSearchParams();
   const [searchTerm] = useState('');
@@ -105,21 +111,37 @@ export default function DataTable<TData, TValue>({
     manualPagination: true,
     manualFiltering: true,
     getSortedRowModel: getSortedRowModel(),
-    onSortingChange: setSorting
+    onSortingChange: setSorting,
+    meta
   });
 
   return (
     <>
-      {showSearch && (
-        <InputSearch
-          placeholder={placeHolderInputSearch}
-          onSubmit={(value) => {
-            setSearchParams({
-              ...Object.fromEntries(searchParams),
-              keyword: value
-            });
-          }}
-        />
+      {(showSearch || (showAdd && onAdd)) && (
+        <div className="mb-4 flex items-center justify-between gap-4">
+          {showSearch && (
+            <div className="flex-1">
+              <InputSearch
+                placeholder={placeHolderInputSearch}
+                onSubmit={(value) => {
+                  setSearchParams({
+                    ...Object.fromEntries(searchParams),
+                    keyword: value
+                  });
+                }}
+              />
+            </div>
+          )}
+          {showAdd && onAdd && (
+            <Button
+              onClick={onAdd}
+              className="bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700"
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              {addButtonText}
+            </Button>
+          )}
+        </div>
       )}
       <ScrollArea
         className={`h-[calc(${heightTable}-220px)] rounded-md border md:h-[calc(${heightTable}-80px)]`}

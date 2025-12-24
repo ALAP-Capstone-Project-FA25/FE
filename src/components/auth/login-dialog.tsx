@@ -20,6 +20,7 @@ import BaseRequest from '@/config/axios.config';
 import { Checkbox } from '../ui/checkbox';
 import { Eye, EyeOff, Lock, User as UserIcon, Mail, Phone } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
+import AccountStatusDialog from './AccountStatusDialog';
 
 
 interface LoginDialogProps {
@@ -36,6 +37,17 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
+  
+  // Account status dialog
+  const [accountStatusDialog, setAccountStatusDialog] = useState<{
+    open: boolean;
+    status: 'banned' | 'unverified' | null;
+    email?: string;
+  }>({
+    open: false,
+    status: null,
+    email: undefined
+  });
   
   // Register fields
   const [registerData, setRegisterData] = useState({
@@ -79,10 +91,31 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
       });
 
       if (error) {
+        const errorMessage = error?.data?.message || error?.message || 'Tên đăng nhập hoặc mật khẩu không đúng';
+        
+        // Kiểm tra các trường hợp lỗi đặc biệt
+        if (errorMessage.includes('User đã bị khóa') || errorMessage.includes('bị khóa')) {
+          setAccountStatusDialog({
+            open: true,
+            status: 'banned',
+            email: userName.includes('@') ? userName : undefined
+          });
+          return;
+        }
+        
+        if (errorMessage.includes('Email chưa được xác nhận') || errorMessage.includes('chưa được xác thực')) {
+          setAccountStatusDialog({
+            open: true,
+            status: 'unverified',
+            email: userName.includes('@') ? userName : undefined
+          });
+          return;
+        }
+        
+        // Lỗi thông thường
         toast({
           title: 'Đăng nhập thất bại',
-          description:
-            error?.data?.message || 'Tên đăng nhập hoặc mật khẩu không đúng',
+          description: errorMessage,
           variant: 'destructive'
         });
         return;
@@ -765,6 +798,14 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
           )}
         </AnimatePresence>
       </DialogContent>
+      
+      {/* Account Status Dialog */}
+      <AccountStatusDialog
+        open={accountStatusDialog.open}
+        onOpenChange={(open) => setAccountStatusDialog(prev => ({ ...prev, open }))}
+        status={accountStatusDialog.status}
+        email={accountStatusDialog.email}
+      />
     </Dialog>
   );
 }

@@ -1,5 +1,6 @@
 import { SidebarProvider } from '@/components/ui/sidebar';
 import AppSidebar from '../shared/app-sidebar';
+import AccountStatusChecker from '../auth/AccountStatusChecker';
 import __helpers from '@/helpers';
 
 export default function AdminLayout({
@@ -12,6 +13,7 @@ export default function AdminLayout({
       <SidebarProvider defaultOpen={true}>
         <AppSidebar />
         <main className="w-full">{children}</main>
+        <AccountStatusChecker />
       </SidebarProvider>
     </div>
   );

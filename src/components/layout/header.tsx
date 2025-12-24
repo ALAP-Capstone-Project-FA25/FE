@@ -1,21 +1,23 @@
 import {
-  Bell,
   CalendarClock,
   Home,
   LogOutIcon,
   Map,
   Package,
-  Search,
-  User2
+  User2,
+  BookOpen,
+  Settings
 } from 'lucide-react';
-import { Input } from '../ui/input';
 import { Button } from '../ui/button';
 import { usePathname, useRouter } from '@/routes/hooks';
 import { useState, useRef, useEffect } from 'react';
 import LoginDialog from '../auth/login-dialog';
 import __helpers from '@/helpers';
 import { useGetMyInfo } from '@/queries/user.query';
+import { USER_ROLE } from '@/constants/data';
 import Joyride, { Step, CallBackProps, STATUS } from 'react-joyride';
+import NotificationDropdown from '../notification/NotificationDropdown';
+import SearchDropdown from '../search/SearchDropdown';
 
 const NAV_ITEMS = [
   {
@@ -31,10 +33,16 @@ const NAV_ITEMS = [
     path: '/pick-category-to-knowledge'
   },
   {
-    key: 'blog',
+    key: 'events',
     label: 'Sự kiện',
     icon: CalendarClock,
     path: '/events'
+  },
+  {
+    key: 'blog',
+    label: 'Blog',
+    icon: BookOpen,
+    path: '/blog'
   },
   {
     key: 'pricing',
@@ -185,13 +193,7 @@ export default function Header() {
             </div>
 
             <div className="mx-12 max-w-xl flex-1">
-              <div className="relative">
-                <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
-                <Input
-                  placeholder="Tìm kiếm khóa học, bài viết, video, ..."
-                  className="rounded-full border-gray-200 pl-11"
-                />
-              </div>
+              <SearchDropdown />
             </div>
 
             <div className="flex items-center gap-6">
@@ -219,7 +221,20 @@ export default function Header() {
                   </p>
                 )
               )}
-              <Bell className="h-5 w-5 cursor-pointer text-gray-600 hover:text-orange-500" />
+              {isLogin && <NotificationDropdown />}
+              {/* Admin Management Button - only show if admin and not in admin section */}
+              {isLogin &&
+                infoUser?.role === USER_ROLE.ADMIN &&
+                !currentPath.startsWith('/admin') && (
+                  <Button
+                    onClick={() => router.push('/admin/dashboard')}
+                    className="bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg hover:from-orange-600 hover:to-orange-700"
+                    size="sm"
+                  >
+                    <Settings className="mr-2 h-4 w-4" />
+                    Trang Quản Lý
+                  </Button>
+                )}
               {isLogin ? (
                 <div className="relative" ref={dropdownRef}>
                   <div
@@ -228,7 +243,10 @@ export default function Header() {
                     title="Tài khoản"
                   >
                     <img
-                      src={infoUser?.avatar || "https://img.freepik.com/premium-vector/person-with-blue-shirt-that-says-name-person_1029948-7040.jpg?semt=ais_se_enriched&w=740&q=80"}
+                      src={
+                        infoUser?.avatar ||
+                        'https://img.freepik.com/premium-vector/person-with-blue-shirt-that-says-name-person_1029948-7040.jpg?semt=ais_se_enriched&w=740&q=80'
+                      }
                       alt="avatar"
                       className="h-8 w-8 rounded-full object-cover"
                     />
@@ -246,7 +264,17 @@ export default function Header() {
                         }}
                       >
                         <User2 className="h-4 w-4" />
-                        Thông tin tài khoản
+                        Xem hồ sơ
+                      </div>
+                      <div
+                        className="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        onClick={() => {
+                          router.push('/user-profile');
+                          setUserDropdownOpen(false);
+                        }}
+                      >
+                        <User2 className="h-4 w-4" />
+                        Chỉnh sửa thông tin
                       </div>
                       <div
                         className="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
