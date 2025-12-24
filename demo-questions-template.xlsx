@@ -1,0 +1,3 @@
+Câu hỏi (*),Số lựa chọn tối đa (*),Đáp án 1 (*),Đúng/Sai 1 (*),Đáp án 2 (*),Đúng/Sai 2 (*),Đáp án 3,Đúng/Sai 3,Đáp án 4,Đúng/Sai 4,Đáp án 5,Đúng/Sai 5
+React là gì?,1,Một thư viện JavaScript để xây dựng giao diện người dùng,ĐÚNG,Một framework backend,SAI,Một cơ sở dữ liệu,SAI,Một ngôn ngữ lập trình,SAI
+Hook nào được sử dụng để quản lý state trong React?,2,useState,ĐÚNG,useEffect,SAI,useReducer,ĐÚNG,useContext,SAI
