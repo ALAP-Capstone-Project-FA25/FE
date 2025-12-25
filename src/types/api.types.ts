@@ -171,6 +171,37 @@ export interface Payment {
   updatedAt: string;
 }
 
+// Package Types
+export enum PackageType {
+  STARTER = 0,
+  PREMIUM = 1
+}
+
+export interface Package {
+  id: number;
+  title: string;
+  description: string;
+  packageType: PackageType;
+  price: number;
+  duration: number;
+  isActive: boolean;
+  features: string;
+  isPopular: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface UpdatePackageDto {
+  title: string;
+  description: string;
+  packageType: PackageType;
+  price: number;
+  duration: number;
+  isActive: boolean;
+  features: string;
+  isPopular: boolean;
+}
+
 // Event Types
 export interface Event {
   id: number;
@@ -387,4 +418,17 @@ export interface User {
   username: string;
   email?: string;
   avatar?: string;
+}
+
+// Event Ticket Status Types
+export interface UserTicketStatusDto {
+  hasTicket: boolean;
+  ticketId?: number;
+  paymentId?: number;
+  paymentStatus?: PaymentStatus;
+  paymentUrl?: string;
+  amount?: number;
+  createdAt?: string;
+  isExpired?: boolean;
+  minutesRemaining?: number;
 }

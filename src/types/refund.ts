@@ -28,6 +28,9 @@ export interface EventTicket {
   needRefund: boolean;
   isRefunded: boolean;
   refundImageUrl?: string;
+  bankAccountNumber?: string;
+  bankName?: string;
+  bankAccountHolderName?: string;
   createdAt: string;
   updatedAt?: string;
   user: {

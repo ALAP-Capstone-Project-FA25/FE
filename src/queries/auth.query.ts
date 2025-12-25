@@ -42,9 +42,9 @@ export const useForgotPassword = () => {
   return useMutation({
     mutationKey: ['forgot-password'],
     mutationFn: async (email: string) => {
-      const formData = new FormData();
-      formData.append('email', email);
-      return BaseRequest.Post(`/api/Auth/send-mail-reset-password`, formData);
+      return BaseRequest.Post(`/api/Auth/send-mail-reset-password`, {
+        email
+      });
     }
   });
 };

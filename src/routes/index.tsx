@@ -48,9 +48,13 @@ const TetsPage = lazy(() => import('@/pages/TestPage/index'));
 const MentorChatRoomPage = lazy(
   () => import('@/pages/MentorPage/MentorChatRoomPage/index')
 );
+const MentorDashboardPage = lazy(
+  () => import('@/pages/MentorPage/MentorDashboard/index')
+);
 const EventPage = lazy(() => import('@/pages/AdminPage/EventPage/index'));
 const ClientEventPage = lazy(() => import('@/pages/EventPage/index'));
 const MyEventTicketPage = lazy(() => import('@/pages/MyEventTicketPage/index'));
+const MyCoursesPage = lazy(() => import('@/pages/MyCoursesPage/index'));
 const EventDetailPage = lazy(
   () => import('@/pages/AdminPage/EventDetailPage/index')
 );
@@ -85,11 +89,15 @@ const EditEntryTestPage = lazy(
 const AdminSpeakerPage = lazy(
   () => import('@/pages/AdminPage/SpeakerPage/index')
 );
+const AdminPackagePage = lazy(
+  () => import('@/pages/AdminPage/PackagePage/index')
+);
 const UserProfilePage = lazy(() => import('@/pages/UserProfilePage/index'));
 const TestProfilePage = lazy(() => import('@/pages/TestProfilePage/index'));
 
 const ResetPasswordPage = lazy(() => import('@/pages/ResetPasswordPage/index'));
 const EmailVerifiedPage = lazy(() => import('@/pages/EmailVerifiedPage/index'));
+const RefundInfoPage = lazy(() => import('@/pages/RefundInfoPage/index'));
 const AdaptiveRecommendationsPage = lazy(
   () => import('@/pages/AdaptiveRecommendations/index')
 );
@@ -148,6 +156,10 @@ export default function AppRouter() {
           element: <MyEventTicketPage />
         },
         {
+          path: '/my-courses',
+          element: <MyCoursesPage />
+        },
+        {
           path: '/pick-category-to-knowledge',
           element: <PickCategoryToKnowledgePage />
         },
@@ -170,6 +182,10 @@ export default function AppRouter() {
         {
           path: '/blog/edit/:id',
           element: <BlogCreateEditPage />
+        },
+        {
+          path: '/my-profile',
+          element: <UserProfilePage />
         }
       ]
     }
@@ -226,6 +242,10 @@ export default function AppRouter() {
           element: <PaymentPage />
         },
         {
+          path: '/mentor/dashboard',
+          element: <MentorDashboardPage />
+        },
+        {
           path: '/mentor/courses',
           element: <MentorCoursePage />
         },
@@ -274,9 +294,14 @@ export default function AppRouter() {
           element: <AdminBlogPage />
         },
         {
+          path: '/admin/packages',
+          element: <AdminPackagePage />
+        },
+        {
           path: '/user-profile',
           element: <UserProfilePage />
         },
+
         {
           path: '/test-profile',
           element: <TestProfilePage />
@@ -332,6 +357,10 @@ export default function AppRouter() {
     {
       path: '/email-verified',
       element: <EmailVerifiedPage />
+    },
+    {
+      path: '/refund-info/:ticketId',
+      element: <RefundInfoPage />
     },
     {
       path: '*',

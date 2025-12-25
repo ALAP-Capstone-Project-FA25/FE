@@ -89,3 +89,13 @@ export const useGetListCourseByCategoryId = (categoryId: number) => {
     }
   });
 };
+
+// Get My Courses (enrolled courses)
+export const useGetMyCourses = () => {
+  return useQuery({
+    queryKey: ['my-courses'],
+    queryFn: async () => {
+      return BaseRequest.Get(`/api/UserCourse/my-with-details`);
+    }
+  });
+};

@@ -93,12 +93,13 @@ export const useGetCourseTopicsForMentor = (
       const response = await BaseRequest.Get(
         `/api/Topic/get-by-paging-for-mentor?${params.toString()}`
       );
-      if (response[0]) {
-        throw new Error(
-          response[0]?.data?.message || 'Failed to get course topics'
-        );
-      }
-      return response[1];
+      // if (response[0]) {
+      //   throw new Error(
+      //     response[0]?.data?.message || 'Failed to get course topics'
+      //   );
+      // }
+      console.log('response', response);
+      return response;
     },
     enabled: !!courseId && !!studentId && courseId > 0 && studentId > 0
   });

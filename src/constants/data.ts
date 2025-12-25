@@ -41,6 +41,14 @@ export const adminNavItems: any = [
         isActive: false,
         shortcut: ['d', 'd'],
         items: []
+      },
+      {
+        title: 'Speaker',
+        url: '/admin/speakers',
+        icon: 'mic',
+        isActive: false,
+        shortcut: ['s', 'p'],
+        items: []
       }
     ]
   },
@@ -62,7 +70,7 @@ export const adminNavItems: any = [
     label: 'Quản lý tài nguyên',
     detail: [
       {
-        title: 'Chuyên ngành',
+        title: 'Nhóm môn học',
         url: '/admin/major',
         icon: 'list',
         isActive: false,
@@ -78,22 +86,29 @@ export const adminNavItems: any = [
         items: []
       },
       {
+        title: 'Danh sách khóa học',
+        url: '/admin/courses',
+        icon: 'book',
+        isActive: false,
+        shortcut: ['d', 'd'],
+        items: []
+      },
+      {
         title: 'Bài test đầu vào',
         url: '/admin/entry-tests',
-        icon: 'package',
+        icon: 'bookOpenCheck',
         isActive: false,
         shortcut: ['e', 't'],
         items: []
       },
       {
-        title: 'Danh sách khóa học',
-        url: '/admin/courses',
-        icon: 'bookOpen',
+        title: 'Gói học',
+        url: '/admin/packages',
+        icon: 'package',
         isActive: false,
-        shortcut: ['d', 'd'],
+        shortcut: ['p', 'k'],
         items: []
       }
-   
     ]
   },
 
@@ -108,6 +123,15 @@ export const adminNavItems: any = [
         shortcut: ['d', 'd'],
         items: []
       },
+
+      {
+        title: 'Danh sách bài viết',
+        url: '/admin/blog',
+        icon: 'stickyNote',
+        isActive: false,
+        shortcut: ['d', 'd'],
+        items: []
+      },
       {
         title: 'Quản lý hoàn tiền',
         url: '/admin/refunds',
@@ -117,9 +141,7 @@ export const adminNavItems: any = [
         items: []
       }
     ]
-  },
-
- 
+  }
 ];
 
 export const managerNavItems: any = [
@@ -130,19 +152,6 @@ export const managerNavItems: any = [
         title: 'Tổng quan',
         url: '/admin/dashboard',
         icon: 'dashboard',
-        isActive: false,
-        shortcut: ['d', 'd'],
-        items: []
-      }
-    ]
-  },
-  {
-    label: 'Danh sách học viên',
-    detail: [
-      {
-        title: 'Học viên',
-        url: '/admin/users/students',
-        icon: 'user',
         isActive: false,
         shortcut: ['d', 'd'],
         items: []

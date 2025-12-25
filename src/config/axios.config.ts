@@ -13,7 +13,9 @@ const onRequestSuccess = (config: any) => {
     config.data !== undefined &&
     (config.method === 'put' || config.method === 'post')
   ) {
-    if (!config.headers['Content-Type']) {
+    // Don't override Content-Type if it's FormData (axios will set it automatically)
+    const isFormData = config.data instanceof FormData;
+    if (!config.headers['Content-Type'] && !isFormData) {
       config.headers['Content-Type'] = 'application/json';
     }
   }
