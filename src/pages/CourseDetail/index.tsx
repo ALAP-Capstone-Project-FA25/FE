@@ -6,39 +6,45 @@ import {
   Clock,
   BookOpen,
   BarChart3,
-  Video
+  Video,
+  CheckCircle2,
+  Lock,
+  Award,
+  Users,
+  Star,
+  Loader2
 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import {
-  useGetTopicsByCourseId,
-  useGetTopicsByCourseIdWithCourse
-} from '@/queries/topic.query';
+import { useGetTopicsByCourseIdWithCourse } from '@/queries/topic.query';
 import { useParams } from 'react-router-dom';
 import __helpers from '@/helpers';
 import { useRouter } from '@/routes/hooks';
+import { useAuth } from '@/routes/hooks/use.auth';
+import LoginDialog from '@/components/auth/login-dialog';
+import { useEnrollCourse } from '@/queries/course.query';
+import { toast } from '@/components/ui/use-toast';
 
 export default function CourseDetailPage() {
-  const [expandedSections, setExpandedSections] = useState<number[]>([]);
+  const [expandedSections, setExpandedSections] = useState<number[]>([0]);
   const { id } = useParams<{ id: string }>();
   const { data } = useGetTopicsByCourseIdWithCourse(parseInt(id || '0'));
-  console.log(data);
   const courseData = data?.topics?.listObjects || [];
   const courseInfo = data?.course || {};
-
-  // Helper function to format duration from seconds to MM:SS
+  const { data: authInfo } = useAuth();
+  console.log(authInfo);
   const formatDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
     return `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
   };
 
-  // Calculate total lessons and duration
   const totalLessons = courseData.reduce(
     (total, topic) => total + (topic.lessons?.length || 0),
     0
   );
+
   const totalDuration = courseData.reduce((total, topic) => {
     return (
       total +
@@ -52,10 +58,7 @@ export default function CourseDetailPage() {
   const formatTotalDuration = (seconds: number) => {
     const hours = Math.floor(seconds / 3600);
     const minutes = Math.floor((seconds % 3600) / 60);
-    if (hours > 0) {
-      return `${hours} giờ ${minutes} phút`;
-    }
-    return `${minutes} phút`;
+    return hours > 0 ? `${hours}h ${minutes}m` : `${minutes}m`;
   };
 
   const toggleSection = (sectionId: number) => {
@@ -67,202 +70,356 @@ export default function CourseDetailPage() {
   };
 
   const toggleAllSections = () => {
-    if (expandedSections.length === courseData.length) {
-      setExpandedSections([]);
-    } else {
-      setExpandedSections(courseData.map((topic) => topic.id));
-    }
+    setExpandedSections(
+      expandedSections.length === courseData.length
+        ? []
+        : courseData.map((topic) => topic.id)
+    );
   };
 
   const router = useRouter();
+  const isEnrolled = authInfo?.userCourses?.some(
+    (course) => course.courseId === parseInt(id || '0')
+  );
+
+  const [isLoginDialogOpen, setIsLoginDialogOpen] = useState(false);
+  const userHasPackage = authInfo?.userPackages.length > 0;
+
+  const { mutateAsync: enrollCourse, isPending } = useEnrollCourse();
+
+  const handleEnrollCourse = async () => {
+    const [err] = await enrollCourse({ courseId: parseInt(id || '0') });
+
+    if (err) {
+      toast({
+        title: 'Lỗi',
+        description: err.message || 'Có lỗi xảy ra',
+        variant: 'destructive'
+      });
+    } else {
+      toast({
+        title: 'Thành công',
+        description: 'Bạn đã đăng ký khóa học thành công',
+        variant: 'success'
+      });
+      router.push(`/learning/${id}`);
+    }
+  };
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
-      <div className="mx-auto max-w-7xl">
-        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-          {/* Left Content */}
-          <div className="lg:col-span-2">
-            <div className="mb-6 rounded-lg bg-white p-8 shadow-sm">
-              <h1 className="mb-4 text-3xl font-bold text-gray-900">
+    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50">
+      <LoginDialog
+        open={isLoginDialogOpen}
+        onOpenChange={setIsLoginDialogOpen}
+      />
+
+      <div className="border-b bg-white px-6 py-12">
+        <div className="mx-auto max-w-7xl">
+          <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+            <div className="lg:col-span-2">
+              <div className="mb-4 flex items-center gap-2">
+                <Badge className="border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100">
+                  <Award className="mr-1 h-3 w-3" />
+                  Khóa học phổ biến
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="border-gray-200 text-gray-700"
+                >
+                  <Star className="mr-1 h-3 w-3 fill-orange-400 text-orange-400" />
+                  4.8 (1,234 đánh giá)
+                </Badge>
+              </div>
+
+              <h1 className="mb-4 text-3xl font-bold text-gray-900 lg:text-5xl">
                 {courseInfo.title}
               </h1>
-              <p className="leading-relaxed text-gray-600">
+
+              <p className="mb-6 text-base leading-relaxed text-gray-600">
                 {courseInfo.description}
               </p>
-            </div>
 
-            {/* Course Content */}
-            <div className="rounded-lg bg-white p-8 shadow-sm">
-              <div className="mb-6 flex items-center justify-between">
-                <h2 className="text-2xl font-bold text-gray-900">
-                  Nội dung khóa học
-                </h2>
-                <button
-                  onClick={toggleAllSections}
-                  className="rounded-md border border-orange-200 px-3 py-1 text-sm text-orange-500 transition-colors hover:bg-orange-50"
-                >
-                  {expandedSections.length === courseData.length
-                    ? 'Thu gọn tất cả'
-                    : 'Mở rộng tất cả'}
-                </button>
-              </div>
-
-              <div className="mb-6 flex items-center gap-2 text-sm text-gray-600">
-                <span className="font-medium">{courseData.length} chương</span>
-                <span>•</span>
-                <span>{totalLessons} bài học</span>
-                <span>•</span>
-                <span>Thời lượng {formatTotalDuration(totalDuration)}</span>
-              </div>
-
-              <div className="space-y-2">
-                {courseData.map((topic) => (
-                  <div
-                    key={topic.id}
-                    className="overflow-hidden rounded-lg border border-gray-200"
-                  >
-                    <div
-                      className="flex cursor-pointer items-center justify-between p-4 transition-colors hover:bg-gray-50"
-                      onClick={() => toggleSection(topic.id)}
-                    >
-                      <div className="flex items-center gap-3">
-                        {expandedSections.includes(topic.id) ? (
-                          <ChevronDown className="h-5 w-5 text-gray-400" />
-                        ) : (
-                          <ChevronRight className="h-5 w-5 text-gray-400" />
-                        )}
-                        <span className="font-medium text-gray-900">
-                          {topic.title}
-                        </span>
-                      </div>
-                      <span className="text-sm text-gray-500">
-                        {topic.lessons?.length || 0} bài học
-                      </span>
-                    </div>
-
-                    {expandedSections.includes(topic.id) &&
-                      topic.lessons &&
-                      topic.lessons.length > 0 && (
-                        <div className="border-t border-gray-200 bg-gray-50">
-                          {topic.lessons.map((lesson, index) => (
-                            <div
-                              key={lesson.id}
-                              className="flex cursor-pointer items-center justify-between p-4 transition-colors hover:bg-white"
-                            >
-                              <div className="flex items-center gap-3">
-                                <div className="flex h-6 w-6 items-center justify-center rounded-full bg-gray-300">
-                                  <Play className="h-3 w-3 fill-current text-white" />
-                                </div>
-                                <div className="flex flex-col">
-                                  <span className="text-sm font-medium text-gray-700">
-                                    {lesson.title}
-                                  </span>
-                                  {lesson.description && (
-                                    <span className="text-xs text-gray-500">
-                                      {lesson.description}
-                                    </span>
-                                  )}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                {lesson.isFree && (
-                                  <Badge
-                                    variant="outline"
-                                    className="border-green-200 text-xs text-green-600"
-                                  >
-                                    Miễn phí
-                                  </Badge>
-                                )}
-                                <span className="text-sm text-gray-500">
-                                  {formatDuration(lesson.duration || 0)}
-                                </span>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
+              <div className="flex flex-wrap items-center gap-6 text-sm text-gray-600">
+                <div className="flex items-center gap-2">
+                  <div className="rounded-lg bg-orange-50 p-2">
+                    <Users className="h-4 w-4 text-orange-600" />
                   </div>
-                ))}
+                  <span>2,456 học viên</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="rounded-lg bg-orange-50 p-2">
+                    <Clock className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <span>{formatTotalDuration(totalDuration)}</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="rounded-lg bg-orange-50 p-2">
+                    <BookOpen className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <span>{totalLessons} bài học</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <div className="rounded-lg bg-orange-50 p-2">
+                    <BarChart3 className="h-4 w-4 text-orange-600" />
+                  </div>
+                  <span>Cơ bản đến nâng cao</span>
+                </div>
               </div>
             </div>
           </div>
+        </div>
+      </div>
 
-          {/* Right Sidebar */}
+      <div className="mx-auto max-w-7xl px-6 py-12">
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
+          <div className="lg:col-span-2">
+            <Card className="overflow-hidden border-0 shadow-xl">
+              <CardContent className="p-8">
+                <div className="mb-8 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-3xl font-bold text-gray-900">
+                      Nội dung khóa học
+                    </h2>
+                    <p className="mt-2 text-sm text-gray-600">
+                      {courseData.length} chương • {totalLessons} bài học •{' '}
+                      {formatTotalDuration(totalDuration)} video
+                    </p>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={toggleAllSections}
+                    className="border-orange-200 text-orange-600 hover:bg-orange-50"
+                  >
+                    {expandedSections.length === courseData.length
+                      ? 'Thu gọn'
+                      : 'Mở rộng'}
+                  </Button>
+                </div>
+
+                <div className="space-y-3">
+                  {courseData.map((topic, topicIndex) => (
+                    <div
+                      key={topic.id}
+                      className="overflow-hidden rounded-xl border border-gray-200 bg-white transition-all hover:border-orange-300 hover:shadow-md"
+                    >
+                      <div
+                        className="flex cursor-pointer items-center justify-between bg-gradient-to-r from-orange-50 to-amber-50 p-5 transition-colors hover:from-orange-100 hover:to-amber-100"
+                        onClick={() => toggleSection(topic.id)}
+                      >
+                        <div className="flex items-center gap-4">
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-orange-500 to-amber-500 text-white shadow-md">
+                            <span className="text-sm font-bold">
+                              {topicIndex + 1}
+                            </span>
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="font-semibold text-gray-900">
+                              {topic.title}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {topic.lessons?.length || 0} bài học
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-3">
+                          {expandedSections.includes(topic.id) ? (
+                            <ChevronDown className="h-5 w-5 text-orange-600 transition-transform" />
+                          ) : (
+                            <ChevronRight className="h-5 w-5 text-gray-400 transition-transform" />
+                          )}
+                        </div>
+                      </div>
+
+                      {expandedSections.includes(topic.id) &&
+                        topic.lessons?.length > 0 && (
+                          <div className="border-t border-gray-100 bg-white">
+                            {topic.lessons.map((lesson, lessonIndex) => (
+                              <div
+                                key={lesson.id}
+                                className="group flex items-center justify-between border-b border-gray-50 p-4 transition-all last:border-b-0 hover:bg-orange-50/50"
+                              >
+                                <div className="flex items-center gap-4">
+                                  <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange-100 to-amber-100 transition-all group-hover:from-orange-200 group-hover:to-amber-200">
+                                    {lesson.isFree ? (
+                                      <Play className="h-4 w-4 fill-orange-600 text-orange-600" />
+                                    ) : (
+                                      <Lock className="h-4 w-4 text-gray-400" />
+                                    )}
+                                  </div>
+                                  <div className="flex flex-col">
+                                    <span className="text-sm font-medium text-gray-800 group-hover:text-orange-700">
+                                      {lessonIndex + 1}. {lesson.title}
+                                    </span>
+                                    {lesson.description && (
+                                      <span className="mt-0.5 text-xs text-gray-500">
+                                        {lesson.description}
+                                      </span>
+                                    )}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                  {lesson.isFree && (
+                                    <Badge
+                                      variant="outline"
+                                      className="border-green-300 bg-green-50 text-xs font-medium text-green-700"
+                                    >
+                                      Miễn phí
+                                    </Badge>
+                                  )}
+                                  <span className="flex items-center gap-1 text-sm text-gray-500">
+                                    <Clock className="h-3.5 w-3.5" />
+                                    {formatDuration(lesson.duration || 0)}
+                                  </span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card className="mt-8 border-0 shadow-xl">
+              <CardContent className="p-8">
+                <h3 className="mb-6 text-2xl font-bold text-gray-900">
+                  Bạn sẽ học được gì?
+                </h3>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  {[
+                    'Nắm vững kiến thức nền tảng',
+                    'Thực hành qua dự án thực tế',
+                    'Kỹ năng giải quyết vấn đề',
+                    'Tư duy logic và sáng tạo',
+                    'Làm việc nhóm hiệu quả'
+                  ].map((item, index) => (
+                    <div key={index} className="flex items-start gap-3">
+                      <CheckCircle2 className="mt-0.5 h-5 w-5 flex-shrink-0 text-orange-500" />
+                      <span className="text-sm text-gray-700">{item}</span>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
           <div className="lg:col-span-1">
-            <Card className="sticky top-8 overflow-hidden shadow-lg">
-              {/* Video Preview */}
-              <div
-                className="relative flex h-64 items-center justify-center"
-                style={{
-                  backgroundImage: `url(${courseInfo.imageUrl})`,
-                  backgroundColor: '#f0f0f0',
-                  backgroundSize: 'contain',
-                  backgroundPosition: 'center'
-                }}
-              >
-                <div className="h-full w-full text-center">
-                  <img
-                    src={courseInfo.imageUrl}
-                    alt={courseInfo.title}
-                    className="h-full w-full object-cover"
-                  />
+            <Card className="sticky top-8 hidden overflow-hidden border-2 border-orange-200 shadow-2xl lg:block">
+              <div className="relative h-64 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
+                <img
+                  src={courseInfo.imageUrl}
+                  alt={courseInfo.title}
+                  className="h-full w-full object-cover transition-transform duration-300 hover:scale-105"
+                />
+                <div className="absolute inset-0 flex items-center justify-center bg-black/30 opacity-0 transition-opacity hover:opacity-100">
+                  <div className="flex h-16 w-16 items-center justify-center rounded-full bg-white/90 shadow-xl">
+                    <Play className="h-8 w-8 fill-orange-600 text-orange-600" />
+                  </div>
                 </div>
               </div>
 
               <CardContent className="p-6">
                 <div className="mb-6 text-center">
-                  <div className="mb-4 text-3xl font-bold text-orange-500">
-                    <p className="text-2xl font-bold text-orange-500">
-                      Giá: {__helpers.formatCurrency(courseInfo.salePrice)} vnd
-                    </p>
+                  <div className="mb-1 text-sm text-gray-500 line-through">
+                    {__helpers.formatCurrency(
+                      courseInfo.originalPrice || courseInfo.salePrice * 1.5
+                    )}{' '}
+                    đ
                   </div>
-                  <Button
-                    className="w-full rounded-full bg-blue-500 py-6 text-base font-semibold text-white hover:bg-blue-600"
-                    onClick={() => router.push(`/learning/${id}`)}
-                  >
-                    VÀO HỌC
-                  </Button>
+                  <div className="mb-1 text-4xl font-bold text-orange-600">
+                    {__helpers.formatCurrency(courseInfo.salePrice)} đ
+                  </div>
+                  <div className="mb-4 text-xs text-green-600">
+                    🔥 Miễn phí khi có đã mua gói
+                  </div>
+
+                  {authInfo ? (
+                    isEnrolled ? (
+                      <Button
+                        className="w-full rounded-lg bg-orange-500 py-6 text-base font-semibold text-white shadow-md transition-all hover:bg-orange-600 hover:shadow-lg"
+                        onClick={() => router.push(`/learning/${id}`)}
+                      >
+                        <Play className="mr-2 h-5 w-5" />
+                        Tiếp tục học
+                      </Button>
+                    ) : userHasPackage ? (
+                      <Button
+                        className="w-full rounded-lg bg-orange-500 py-6 text-base font-semibold text-white shadow-md transition-all hover:bg-orange-600 hover:shadow-lg"
+                        onClick={handleEnrollCourse}
+                        disabled={isPending}
+                      >
+                        {isPending ? (
+                          <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                        ) : (
+                          'Ghi danh khóa học'
+                        )}
+                      </Button>
+                    ) : (
+                      <Button
+                        className="w-full rounded-lg bg-orange-500 py-6 text-base font-semibold text-white shadow-md transition-all hover:bg-orange-600 hover:shadow-lg"
+                        onClick={() => router.push('/pricing')}
+                      >
+                        Mua gói ngay
+                      </Button>
+                    )
+                  ) : (
+                    <Button
+                      className="w-full rounded-lg bg-orange-500 py-6 text-base font-semibold text-white shadow-md transition-all hover:bg-orange-600 hover:shadow-lg"
+                      onClick={() => setIsLoginDialogOpen(true)}
+                    >
+                      Đăng ký học ngay
+                    </Button>
+                  )}
+
+                  <p className="mt-3 text-xs text-gray-500">
+                    Đảm bảo hoàn tiền trong 30 ngày
+                  </p>
                 </div>
 
-                <div className="space-y-4">
-                  <div className="flex items-start gap-3">
-                    <BarChart3 className="mt-0.5 h-5 w-5 flex-shrink-0 text-gray-400" />
-                    <div>
-                      <div className="text-sm font-medium text-gray-700">
-                        Trình độ cơ bản
+                <div className="space-y-4 border-t pt-6">
+                  <h4 className="font-semibold text-gray-900">
+                    Khóa học bao gồm:
+                  </h4>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100">
+                      <BookOpen className="h-5 w-5 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-gray-900">
+                        {totalLessons} bài học
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Video HD chất lượng cao
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3">
-                    <BookOpen className="mt-0.5 h-5 w-5 flex-shrink-0 text-gray-400" />
-                    <div>
-                      <div className="text-sm font-medium text-gray-700">
-                        Tổng số{' '}
-                        <span className="font-bold">
-                          {totalLessons} bài học
-                        </span>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100">
+                      <Clock className="h-5 w-5 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-gray-900">
+                        {formatTotalDuration(totalDuration)}
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Nội dung video chất lượng
                       </div>
                     </div>
                   </div>
 
-                  <div className="flex items-start gap-3">
-                    <Clock className="mt-0.5 h-5 w-5 flex-shrink-0 text-gray-400" />
-                    <div>
-                      <div className="text-sm font-medium text-gray-700">
-                        Thời lượng{' '}
-                        <span className="font-bold">
-                          {formatTotalDuration(totalDuration)}
-                        </span>
-                      </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-100">
+                      <Video className="h-5 w-5 text-orange-600" />
                     </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <Video className="mt-0.5 h-5 w-5 flex-shrink-0 text-gray-400" />
-                    <div>
-                      <div className="text-sm font-medium text-gray-700">
-                        Học mọi lúc, mọi nơi
+                    <div className="flex-1">
+                      <div className="text-sm font-medium text-gray-900">
+                        Truy cập mọi lúc
+                      </div>
+                      <div className="text-xs text-gray-500">
+                        Trên mọi thiết bị
                       </div>
                     </div>
                   </div>
