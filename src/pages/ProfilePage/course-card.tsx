@@ -1,0 +1,56 @@
+'use client';
+
+import { useRouter } from '@/routes/hooks';
+import __helpers from '@/helpers';
+
+export default function CourseCard({ course }: { course: any }) {
+  console.log(course);
+  const router = useRouter();
+  return (
+    <div className="overflow-hidden rounded-xl shadow-md transition-shadow hover:shadow-xl">
+      {/* Card Header with Gradient */}
+      <div
+        className={`bg-gradient-to-br ${course.gradient} flex h-40 flex-col justify-end p-12 text-white`}
+      >
+        <h3 className="mb-2 text-balance text-3xl font-bold">{course.title}</h3>
+        {course.subtitle && (
+          <p className="text-lg text-yellow-200">{course.subtitle}</p>
+        )}
+      </div>
+
+      {/* Card Body */}
+      <div className="bg-white p-6">
+        {/* Title and Price */}
+        <div className="mb-4">
+          <h4 className="mb-2 text-lg font-semibold text-gray-900">
+            {course.title}
+          </h4>
+          <div className="flex flex-col  gap-2">
+            {course.isDone ? (
+              <span className="text-sm font-semibold text-green-500">
+                Hoàn thành
+              </span>
+            ) : (
+              <span className="text-sm font-semibold text-red-500">
+                Đang học
+              </span>
+            )}
+            {course.createdAt && (
+              <span className="text-sm text-gray-500">
+                Ngày đăng ký: {__helpers.convertToDate(course.createdAt)}
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Enroll Button */}
+        <button
+          className="mt-6 w-full rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2 font-medium text-white transition-all hover:from-orange-600 hover:to-orange-700 hover:shadow-md"
+          onClick={() => router.push(`/course/${course.id}`)}
+        >
+          Xem Chi Tiết
+        </button>
+      </div>
+    </div>
+  );
+}
