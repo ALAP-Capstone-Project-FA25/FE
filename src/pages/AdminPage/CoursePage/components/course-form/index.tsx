@@ -28,7 +28,6 @@ import { useGetUsersByPagingByRole } from '@/queries/user.query';
 import { USER_ROLE } from '@/constants/data';
 import { Loader2 } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
-import { CourseType } from '@/types/api.types';
 
 interface CourseFormProps {
   courseId?: number;
@@ -46,8 +45,6 @@ export default function CourseForm({ courseId, onSuccess, onCancel }: CourseForm
   const [categoryId, setCategoryId] = useState<string>('');
   const [mentorId, setMentorId] = useState<string>('');
   const [imageUrl, setImageUrl] = useState<string>('');
-  const [courseType, setCourseType] = useState<CourseType>(CourseType.AS_LEVEL);
-  const [difficulty, setDifficulty] = useState<number>(1); // 1-5 stars
   
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -76,8 +73,6 @@ export default function CourseForm({ courseId, onSuccess, onCancel }: CourseForm
       setCategoryId(course.categoryId?.toString() || '');
       setMentorId((course as any).mentorId?.toString() || '');
       setImageUrl(course.imageUrl || '');
-      setCourseType((course as any).courseType || CourseType.AS_LEVEL);
-      setDifficulty((course as any).difficulty || 1);
     }
   }, [isEdit, courseData]);
 
@@ -92,9 +87,7 @@ export default function CourseForm({ courseId, onSuccess, onCancel }: CourseForm
       salePrice: salePrice || 1,
       categoryId: parseInt(categoryId) || 0,
       mentorId: parseInt(mentorId) || 0,
-      imageUrl: imageUrl || undefined,
-      courseType,
-      difficulty
+      imageUrl: imageUrl || undefined
     };
 
     try {
@@ -116,8 +109,6 @@ export default function CourseForm({ courseId, onSuccess, onCancel }: CourseForm
           setCategoryId('');
           setMentorId('');
           setImageUrl('');
-          setCourseType(CourseType.AS_LEVEL);
-          setDifficulty(1);
         }
         
         toast({
@@ -241,44 +232,6 @@ export default function CourseForm({ courseId, onSuccess, onCancel }: CourseForm
                 {mentors.map((mentor: any) => (
                   <SelectItem key={mentor.id} value={mentor.id.toString()}>
                     {mentor.firstName} {mentor.lastName}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="courseType">Loại khóa học</Label>
-            <Select 
-              value={courseType.toString()} 
-              onValueChange={(value) => setCourseType(parseInt(value) as CourseType)} 
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Chọn loại khóa học..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value={CourseType.AS_LEVEL.toString()}>AS Level</SelectItem>
-                <SelectItem value={CourseType.A2_LEVEL.toString()}>A2 Level</SelectItem>
-                <SelectItem value={CourseType.BOTH.toString()}>Cả hai</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="difficulty">Độ khó (1-5 sao)</Label>
-            <Select 
-              value={difficulty.toString()} 
-              onValueChange={(value) => setDifficulty(parseInt(value))} 
-              required
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Chọn độ khó..." />
-              </SelectTrigger>
-              <SelectContent>
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <SelectItem key={star} value={star.toString()}>
-                    {'⭐'.repeat(star)} ({star} sao)
                   </SelectItem>
                 ))}
               </SelectContent>

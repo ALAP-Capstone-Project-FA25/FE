@@ -7,7 +7,7 @@ import {
   DropdownMenuItem,
   DropdownMenuLabel,
   DropdownMenuSeparator,
-  DropdownMenuTrigger
+  DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import {
   AlertDialog,
@@ -17,13 +17,13 @@ import {
   AlertDialogDescription,
   AlertDialogFooter,
   AlertDialogHeader,
-  AlertDialogTitle
+  AlertDialogTitle,
+  AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { useState } from 'react';
 import { useDeleteCourse } from '@/queries/course.query';
 import { useToast } from '@/components/ui/use-toast';
 import { useQueryClient } from '@tanstack/react-query';
-import EditCourseDialog from '../components/EditCourseDialog';
 
 interface CellActionProps {
   data: any;
@@ -34,38 +34,35 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
-
-  const { mutateAsync: deleteCourse, isPending: isDeleting } =
-    useDeleteCourse();
+  
+  const { mutateAsync: deleteCourse, isPending: isDeleting } = useDeleteCourse();
 
   const handleViewDetails = () => {
     navigate(`/admin/courses/${data.id}/topics`);
   };
 
   const handleEdit = () => {
-    setIsEditDialogOpen(true);
+    // Navigate to edit page or open edit modal
+    navigate(`/admin/courses/edit/${data.id}`);
   };
 
   const handleDelete = async () => {
     try {
       const [err] = await deleteCourse(data.id);
-
+      
       if (err) {
-        const errorMessage =
-          err?.data?.message || err.message || 'Có lỗi xảy ra khi xóa khóa học';
         toast({
           title: 'Lỗi',
-          description: errorMessage,
-          variant: 'destructive'
+          description: err.message || 'Có lỗi xảy ra khi xóa khóa học',
+          variant: 'destructive',
         });
       } else {
         toast({
           title: 'Thành công',
           description: 'Khóa học đã được xóa thành công',
-          variant: 'default'
+          variant: 'default',
         });
-
+        
         // Refresh the courses list
         queryClient.invalidateQueries({ queryKey: ['courses'] });
         setIsDeleteDialogOpen(false);
@@ -74,7 +71,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       toast({
         title: 'Lỗi',
         description: error.message || 'Có lỗi xảy ra',
-        variant: 'destructive'
+        variant: 'destructive',
       });
     }
   };
@@ -105,7 +102,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
             <Edit className="mr-2 h-4 w-4" />
             Chỉnh sửa
           </DropdownMenuItem>
-          <DropdownMenuItem
+          <DropdownMenuItem 
             onClick={() => setIsDeleteDialogOpen(true)}
             className="text-red-600"
           >
@@ -115,16 +112,13 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
         </DropdownMenuContent>
       </DropdownMenu>
 
-      <AlertDialog
-        open={isDeleteDialogOpen}
-        onOpenChange={setIsDeleteDialogOpen}
-      >
+      <AlertDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Xác nhận xóa khóa học</AlertDialogTitle>
             <AlertDialogDescription>
-              Bạn có chắc chắn muốn xóa khóa học "{data.title}"? Hành động này
-              không thể hoàn tác.
+              Bạn có chắc chắn muốn xóa khóa học "{data.title}"? 
+              Hành động này không thể hoàn tác.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -139,12 +133,6 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-
-      <EditCourseDialog
-        courseId={data.id}
-        isOpen={isEditDialogOpen}
-        onClose={() => setIsEditDialogOpen(false)}
-      />
     </div>
   );
 };
