@@ -83,6 +83,20 @@ export const columns: ColumnDef<any>[] = [
   },
 
   {
+    accessorKey: 'mentor',
+    header: 'Mentor',
+    enableSorting: false,
+    cell: ({ row }) => {
+      const mentor = row.original.mentor;
+      return (
+        <span>
+          {mentor.firstName} {mentor.lastName}
+        </span>
+      );
+    }
+  },
+
+  {
     id: 'actions',
     cell: ({ row }) => <CellAction data={row.original} />
   }

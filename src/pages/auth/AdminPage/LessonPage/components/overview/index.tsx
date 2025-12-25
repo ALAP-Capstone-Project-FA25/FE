@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Edit, Trash2, Play, Clock, Lock, Unlock } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useDeleteLesson } from '@/queries/lesson.query';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -20,7 +20,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Switch } from '@/components/ui/switch';
 import { useCreateUpdateLesson } from '@/queries/lesson.query';
 import { CreateUpdateLessonDto } from '@/types/api.types';
-
+import { getYouTubePreview, normalizeYouTubeUrl } from '@/helpers/youtube';
 export function OverViewTab() {
   const { topicId } = useParams<{ topicId: string }>();
   const { data, isPending } = useGetLessonsByTopicId(parseInt(topicId || '0'));
@@ -37,7 +37,15 @@ export function OverViewTab() {
   const [editDuration, setEditDuration] = useState(0);
   const [editOrderIndex, setEditOrderIndex] = useState(0);
   const [editIsFree, setEditIsFree] = useState(false);
-
+  const preview = useMemo(
+    () =>
+      getYouTubePreview(editVideoUrl, {
+        autoplay: 0,
+        modestbranding: 1,
+        rel: 0
+      }),
+    [editVideoUrl]
+  );
   const lessons = data?.listObjects || [];
 
   const handleDelete = async (lessonId: number) => {
@@ -274,10 +282,40 @@ export function OverViewTab() {
                 <Label htmlFor="editVideoUrl">URL Video</Label>
                 <Input
                   id="editVideoUrl"
+                  placeholder="https://youtu.be/... hoặc https://www.youtube.com/watch?v=..."
                   value={editVideoUrl}
                   onChange={(e) => setEditVideoUrl(e.target.value)}
+                  onBlur={(e) =>
+                    setEditVideoUrl(normalizeYouTubeUrl(e.target.value))
+                  }
                 />
+
+                {/* Preview YouTube */}
+                <div className="mt-2 rounded-md border bg-muted/40 p-2">
+                  {preview.valid ? (
+                    <div className="aspect-video w-full overflow-hidden rounded">
+                      <iframe
+                        className="h-full w-full"
+                        src={preview.embedUrl!}
+                        title="YouTube preview"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowFullScreen
+                      />
+                    </div>
+                  ) : editVideoUrl.trim() ? (
+                    <p className="text-sm text-muted-foreground">
+                      URL chưa hợp lệ. Dán link dạng{' '}
+                      <code>youtu.be/&lt;id&gt;</code> hoặc{' '}
+                      <code>youtube.com/watch?v=&lt;id&gt;</code>.
+                    </p>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">
+                      Nhập URL để xem preview.
+                    </p>
+                  )}
+                </div>
               </div>
+
               <div className="space-y-2">
                 <Label htmlFor="editDuration">Thời lượng (phút)</Label>
                 <Input
@@ -289,15 +327,6 @@ export function OverViewTab() {
                   }
                 />
               </div>
-            </div>
-
-            <div className="flex items-center space-x-2">
-              <Switch
-                id="editIsFree"
-                checked={editIsFree}
-                onCheckedChange={setEditIsFree}
-              />
-              <Label htmlFor="editIsFree">Bài học miễn phí</Label>
             </div>
           </div>
           <DialogFooter>

@@ -35,7 +35,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const { mutateAsync: updateTopic } = useCreateUpdateTopic();
 
   const handleViewLessons = () => {
-    navigate(`/admin/topics/${data.id}/lessons`);
+    navigate(`/admin/courses/${data.courseId}/topics/${data.id}/lessons`);
   };
 
   const handleDelete = async () => {
@@ -105,18 +105,23 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
           variant="outline"
           size="sm"
           onClick={handleViewLessons}
-          className="flex items-center gap-1"
+          className="flex items-center gap-1 bg-green-500 text-white hover:bg-green-600"
         >
           <Eye className="h-4 w-4" />
-          Bài học
         </Button>
-        <Button variant="outline" size="sm" onClick={() => setIsEditOpen(true)}>
+        <Button
+          variant="outline"
+          className="bg-orange-500 text-white hover:bg-orange-600"
+          size="sm"
+          onClick={() => setIsEditOpen(true)}
+        >
           <Edit className="h-4 w-4" />
         </Button>
         <Button
           variant="outline"
           size="sm"
           onClick={() => setIsDeleteOpen(true)}
+          className="bg-red-500 text-white hover:bg-red-600"
         >
           <Trash2 className="h-4 w-4" />
         </Button>

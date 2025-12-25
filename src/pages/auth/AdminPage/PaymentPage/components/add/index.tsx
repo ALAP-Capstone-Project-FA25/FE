@@ -25,8 +25,6 @@ import {
   SelectTrigger,
   SelectValue
 } from '@/components/ui/select';
-import { useGetUsersByPagingByRole } from '@/queries/user.query';
-import { USER_ROLE } from '@/constants/data';
 
 export default function Add() {
   const [title, setTitle] = useState('');
@@ -34,16 +32,12 @@ export default function Add() {
   const [price, setPrice] = useState<number | ''>('');
   const [salePrice, setSalePrice] = useState<number | ''>('');
   const [categoryId, setCategoryId] = useState<string>('');
-  const [mentorId, setMentorId] = useState<string>('');
   const [imageUrl, setImageUrl] = useState<string>('');
   const { toast } = useToast();
   const { mutateAsync: createCourse, isPending } = useCreateUpdateCourse();
-  const { data: mentorsData, isPending: isPendingMentors } =
-    useGetUsersByPagingByRole(1, 100, '', USER_ROLE.MENTOR);
-  const mentors = mentorsData?.listObjects || [];
+
   // Get categories for dropdown
-  const { data: categoriesData, isPending: isPendingCategories } =
-    useGetCategoriesByPaging(1, 100, '');
+  const { data: categoriesData } = useGetCategoriesByPaging(1, 100, '');
   const categories = categoriesData?.listObjects || [];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -56,7 +50,6 @@ export default function Add() {
       price: price || 0,
       salePrice: salePrice || 0,
       categoryId: parseInt(categoryId) || 0,
-      mentorId: parseInt(mentorId) || 0,
       imageUrl: imageUrl || undefined
     };
 
@@ -90,9 +83,6 @@ export default function Add() {
       });
     }
   };
-  if (isPendingCategories || isPendingMentors) {
-    return <div>Loading...</div>;
-  }
 
   return (
     <Card className="mx-auto w-full max-w-md">
@@ -160,22 +150,6 @@ export default function Add() {
                 {categories.map((category: any) => (
                   <SelectItem key={category.id} value={category.id.toString()}>
                     {category.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="categoryId">Mentor</Label>
-            <Select value={mentorId} onValueChange={setMentorId} required>
-              <SelectTrigger>
-                <SelectValue placeholder="Chọn mentor phụ trách khóa học..." />
-              </SelectTrigger>
-              <SelectContent>
-                {mentors.map((mentor: any) => (
-                  <SelectItem key={mentor.id} value={mentor.id.toString()}>
-                    {mentor.firstName} {mentor.lastName}
                   </SelectItem>
                 ))}
               </SelectContent>

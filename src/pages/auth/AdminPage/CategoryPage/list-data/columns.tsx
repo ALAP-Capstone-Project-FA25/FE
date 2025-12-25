@@ -28,10 +28,10 @@ export const columns: ColumnDef<any>[] = [
     accessorKey: 'name',
     header: 'Tên môn học',
     enableSorting: true
-  },
-
-  {
-    id: 'actions',
-    cell: ({ row }) => <CellAction data={row.original} />
   }
+
+  // {
+  //   id: 'actions',
+  //   cell: ({ row }) => <CellAction data={row.original} />
+  // }
 ];

@@ -3,13 +3,25 @@ import { OverViewTab } from './components/overview';
 import Add from './components/add';
 import BasePages from '@/components/shared/base-pages';
 import ExamManagement from './components/exam';
+import { useParams } from 'react-router-dom';
 
 export default function LessonPage() {
+  const { courseId, topicId } = useParams<{
+    courseId: string;
+    topicId: string;
+  }>();
   return (
     <BasePages
       className="relative flex-1 space-y-4 overflow-y-auto  px-4"
       pageHead="Quản lý khóa học "
-      breadcrumbs={[{ title: 'Quản lý bài học', link: '/course' }]}
+      breadcrumbs={[
+        { title: 'Quản lý bài học', link: '/admin/courses' },
+        { title: 'Quản lý chủ đề', link: `/admin/courses/${courseId}/topics` },
+        {
+          title: 'Quản lý bài học',
+          link: `/admin/courses/${courseId}/topics/${topicId}/lessons`
+        }
+      ]}
     >
       <Tabs defaultValue="overview">
         <TabsList className="grid max-w-xs grid-cols-3">
