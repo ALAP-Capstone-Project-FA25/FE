@@ -2,7 +2,6 @@ import { ColumnDef } from '@tanstack/react-table';
 import { CellAction } from './cell-action';
 import __helpers from '@/helpers';
 import { useSearchParams } from 'react-router-dom';
-import { Checkbox } from '@/components/ui/checkbox';
 
 // const StudentPaperStatus = {
 //   UPLOADED: 0,

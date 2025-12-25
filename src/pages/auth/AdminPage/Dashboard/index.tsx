@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import {
   Card,
   CardContent,
@@ -22,8 +22,7 @@ import {
   Star,
   Calendar,
   DollarSign,
-  Target,
-  Award
+  Target
 } from 'lucide-react';
 import {
   Chart as ChartJS,
@@ -556,7 +555,10 @@ const CourseDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <Line data={revenueChartData} options={revenueChartOptions} />
+                <Line
+                  data={revenueChartData as any}
+                  options={revenueChartOptions as any}
+                />
               </div>
             </CardContent>
           </Card>
@@ -573,7 +575,10 @@ const CourseDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="h-64">
-                <Bar data={studentChartData} options={studentChartOptions} />
+                <Bar
+                  data={studentChartData}
+                  options={studentChartOptions as any}
+                />
               </div>
             </CardContent>
           </Card>
@@ -590,7 +595,10 @@ const CourseDashboard = () => {
             </CardHeader>
             <CardContent>
               <div className="flex h-64 items-center justify-center">
-                <Doughnut data={courseChartData} options={courseChartOptions} />
+                <Doughnut
+                  data={courseChartData}
+                  options={courseChartOptions as any}
+                />
               </div>
             </CardContent>
           </Card>
@@ -609,7 +617,7 @@ const CourseDashboard = () => {
               <div className="h-64">
                 <Bar
                   data={performanceChartData}
-                  options={performanceChartOptions}
+                  options={performanceChartOptions as any}
                 />
               </div>
             </CardContent>

@@ -1,9 +1,8 @@
 import { useGetLessonsByTopicId } from '@/queries/lesson.query';
 import { useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit, Trash2, Play, Clock, Lock, Unlock } from 'lucide-react';
+import { Edit, Trash2, Play, Clock } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { useDeleteLesson } from '@/queries/lesson.query';
 import { useMemo, useState } from 'react';
@@ -17,7 +16,6 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
-import { Switch } from '@/components/ui/switch';
 import { useCreateUpdateLesson } from '@/queries/lesson.query';
 import { CreateUpdateLessonDto } from '@/types/api.types';
 import { getYouTubePreview, normalizeYouTubeUrl } from '@/helpers/youtube';

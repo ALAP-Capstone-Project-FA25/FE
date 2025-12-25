@@ -1,19 +1,19 @@
-import { useSearchParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import ListData from '../../list-data';
 import { DataTableSkeleton } from '@/components/shared/data-table-skeleton';
-import { useGetUsersByPagingByRole } from '@/queries/user.query';
-import { USER_ROLE } from '@/constants/data';
+import { useGetEventTicketByEventId } from '@/queries/event.query';
 
 export function OverViewTab() {
   const [searchParams] = useSearchParams();
   const page = Number(searchParams.get('page') || 1);
   const pageLimit = Number(searchParams.get('limit') || 10);
   const keyword = searchParams.get('keyword') || '';
-  const { data, isPending } = useGetUsersByPagingByRole(
+  const { id } = useParams();
+  const { data, isPending } = useGetEventTicketByEventId(
     page,
     pageLimit,
     keyword,
-    USER_ROLE.USER
+    id
   );
 
   const listObjects = data?.listObjects || [];
@@ -23,7 +23,7 @@ export function OverViewTab() {
   return (
     <>
       <div className="grid gap-6 rounded-md p-4 pt-0 ">
-        <h1 className="text-center font-bold">DANH SÁCH HỌC VIÊN</h1>
+        <h1 className="text-center font-bold">DANH SÁCH ĐƠN HÀNG ĐĂNG KÝ</h1>
         {isPending ? (
           <div className="p-5">
             <DataTableSkeleton

@@ -16,7 +16,6 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { useCreateUpdateCourse } from '@/queries/course.query';
 import { useGetCategoriesByPaging } from '@/queries/category.query';
-import { CreateUpdateCourseDto } from '@/types/api.types';
 import SingleFileUpload from '@/components/shared/single-file-upload';
 import {
   Select,
@@ -43,7 +42,7 @@ export default function Add() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    const formData: CreateUpdateCourseDto = {
+    const formData: any = {
       id: 0, // 0 for create new
       title,
       description,

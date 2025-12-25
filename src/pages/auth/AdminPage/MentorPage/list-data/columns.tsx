@@ -66,7 +66,7 @@ const roleText = (r: number) => {
   return map[r] || `Role ${r}`;
 };
 
-const formatDateTime = (iso?: string) => {
+const formatDateTime = (iso?: any) => {
   if (!iso) return '—';
   const d = new Date(iso);
   if (Number.isNaN(+d)) return '—';

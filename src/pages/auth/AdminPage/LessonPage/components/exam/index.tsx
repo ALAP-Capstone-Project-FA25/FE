@@ -23,7 +23,7 @@ import { toast } from '@/components/ui/use-toast';
 export default function ExamManagement() {
   const { topicId } = useParams();
   console.log(topicId);
-  const { data: topicQuestions, isPending } = useGetTopicQuestionsByPaging(
+  const { data: topicQuestions } = useGetTopicQuestionsByPaging(
     1,
     10,
     '',
@@ -96,7 +96,7 @@ export default function ExamManagement() {
 
     const payload = {
       id: 0,
-      topicId: 1,
+      topicId: Number(topicId),
       maxChoices: currentQuestion.maxChoices,
       question: currentQuestion.question,
       answers: currentQuestion.answers.map((a) => ({
@@ -111,7 +111,7 @@ export default function ExamManagement() {
     // Simulate adding to list
     const newQuestion = {
       id: questions.length + 1,
-      topicId: 1,
+      topicId: Number(topicId),
       question: currentQuestion.question,
       maxChoices: currentQuestion.maxChoices,
       topicQuestionAnswers: currentQuestion.answers.map((a, i) => ({
@@ -124,7 +124,7 @@ export default function ExamManagement() {
       createdAt: new Date().toISOString(),
       updatedAt: '0001-01-01T00:00:00'
     };
-    const [err, data] = await createUpdateTopicQuestion(payload);
+    const [err] = await createUpdateTopicQuestion(payload);
     if (err) {
       toast({
         title: 'Lỗi',
