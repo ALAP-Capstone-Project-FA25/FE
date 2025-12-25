@@ -43,15 +43,7 @@ export const columns: ColumnDef<any>[] = [
       );
     }
   },
-  {
-    accessorKey: 'description',
-    header: 'Mô tả',
-    enableSorting: false,
-    cell: ({ row }) => {
-      const description = row.original.description;
-      return <span className="max-w-xs truncate">{description}</span>;
-    }
-  },
+
   // Ẩn cột giá gốc và giá khuyến mãi
   // {
   //   accessorKey: 'price',
@@ -82,15 +74,6 @@ export const columns: ColumnDef<any>[] = [
     }
   },
 
-  {
-    accessorKey: 'category',
-    header: 'Số học viên',
-    enableSorting: false,
-    cell: ({ row }) => {
-      const userCourses = row.original.userCourses;
-      return <span>{userCourses.length} học viên</span>;
-    }
-  },
 
   {
     id: 'actions',

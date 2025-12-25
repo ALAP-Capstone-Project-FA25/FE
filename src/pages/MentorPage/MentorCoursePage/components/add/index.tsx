@@ -57,7 +57,9 @@ export default function Add() {
       salePrice: salePrice || 1,
       categoryId: parseInt(categoryId) || 0,
       mentorId: parseInt(mentorId) || 0,
-      imageUrl: imageUrl || undefined
+      imageUrl: imageUrl || undefined,
+      courseType: 3, // BOTH as default
+      difficulty: 3 // Default difficulty level
     };
 
     try {

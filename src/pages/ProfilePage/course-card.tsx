@@ -45,7 +45,7 @@ export default function CourseCard({ course }: { course: any }) {
 
         {/* Enroll Button */}
         <button
-          className="mt-6 w-full rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition hover:bg-blue-700"
+          className="mt-6 w-full rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-4 py-2 font-medium text-white transition-all hover:from-orange-600 hover:to-orange-700 hover:shadow-md"
           onClick={() => router.push(`/course/${course.id}`)}
         >
           Xem Chi Tiết
