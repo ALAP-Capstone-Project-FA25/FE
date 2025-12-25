@@ -38,7 +38,7 @@ export default function Profile() {
       return [];
     }
 
-    return profile.userCourses.map((userCourse: UserCourse, index: number) => {
+    return profile.userCourses.map((userCourse: any, index: number) => {
       const gradientIndex = index % gradients.length;
       const iconIndex = index % icons.length;
 
@@ -48,15 +48,8 @@ export default function Profile() {
         subtitle: userCourse.description || '',
         gradient: gradients[gradientIndex],
         icon: icons[iconIndex],
-        stats: {
-          learners: '0',
-          rating: '0',
-          views: '0',
-          duration: '0h'
-        },
-        isFree: true,
-        isDone: userCourse.isDone,
-        isActive: userCourse.isActive
+
+        createdAt: userCourse.createdAt
       };
     });
   }, [profile?.userCourses]);
