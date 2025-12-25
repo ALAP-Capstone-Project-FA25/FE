@@ -1,72 +1,47 @@
-import { useState, useEffect } from 'react';
-import {
-  Play,
-  ChevronLeft,
-  ChevronRight,
-  ChevronDown,
-  ChevronUp,
-  Lock,
-  MessageCircle,
-  Clock,
-  BookOpen,
-  User
-} from 'lucide-react';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { useGetTopicsByCourseId } from '@/queries/topic.query';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import HeaderBar from './HeaderBar';
+import VideoSection from './VideoSection';
+import LessonInfo from './LessonInfo';
+import Sidebar from './Sidebar';
+import { formatTime, getYouTubeVideoId, mergeRanges, uuid } from './utils';
+import { Lesson, Note, QuizItem, Topic } from './types';
+import type { YouTubeProps } from 'react-youtube';
 import { useParams } from 'react-router-dom';
-
-interface Lesson {
-  id: number;
-  title: string;
-  description: string;
-  content: string;
-  videoUrl: string;
-  duration: number;
-  orderIndex: number;
-  isFree: boolean;
-  topicId: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface Topic {
-  id: number;
-  title: string;
-  description: string;
-  orderIndex: number;
-  courseId: number;
-  lessons: Lesson[];
-  createdAt: string;
-  updatedAt: string;
-}
+import { useGetTopicsByPaging } from '@/queries/topic.query';
 
 export default function VideoLearningPage() {
   const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
+  const [currentQuiz, setCurrentQuiz] = useState<QuizItem | null>(null);
   const [expandedSections, setExpandedSections] = useState<number[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
-  const { id } = useParams<{ id: string }>();
-  const { data } = useGetTopicsByCourseId(parseInt(id || '0'));
 
-  const courseData: Topic[] = data?.listObjects || [];
+  const playerRef = useRef<any>(null);
+  const [ytDuration, setYtDuration] = useState<number>(0);
+  const { id } = useParams();
+  const [notes, setNotes] = useState<Note[]>([]);
+  const [watchedRanges, setWatchedRanges] = useState<[number, number][]>([]);
+  const { data: resCourse } = useGetTopicsByPaging(
+    1,
+    10,
+    '',
+    parseInt(id || '0')
+  );
 
-  // Tự động chọn bài học đầu tiên khi có dữ liệu
+  const courseData: Topic[] = useMemo(
+    () => resCourse?.listObjects || [],
+    [resCourse]
+  );
+
+  // --- init first lesson ---
   useEffect(() => {
-    if (courseData.length > 0 && !currentLesson) {
+    if (courseData.length > 0 && !currentLesson && !currentQuiz) {
       const firstTopic = courseData[0];
       if (firstTopic.lessons.length > 0) {
         setCurrentLesson(firstTopic.lessons[0]);
         setExpandedSections([firstTopic.id]);
       }
     }
-  }, [courseData, currentLesson]);
-
-  const getYouTubeVideoId = (url: string): string => {
-    const regExp =
-      /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|&v=)([^#&?]*).*/;
-    const match = url.match(regExp);
-    return match && match[2].length === 11 ? match[2] : '';
-  };
+  }, [courseData, currentLesson, currentQuiz]);
 
   const toggleSection = (sectionId: number) => {
     setExpandedSections((prev) =>
@@ -76,256 +51,281 @@ export default function VideoLearningPage() {
     );
   };
 
-  // Hàm chọn bài học
   const selectLesson = (lesson: Lesson) => {
     setCurrentLesson(lesson);
+    setCurrentQuiz(null);
     setIsPlaying(true);
   };
 
-  const getAllLessons = (): Lesson[] => {
-    return courseData
-      .flatMap((topic) => topic.lessons)
-      .sort((a, b) => a.orderIndex - b.orderIndex);
+  const selectQuiz = (quiz: QuizItem) => {
+    setCurrentQuiz(quiz);
+    setCurrentLesson(null);
   };
+
+  const getAllLessons = (): Lesson[] =>
+    courseData
+      .flatMap((t) => t.lessons)
+      .sort((a, b) => a.orderIndex - b.orderIndex);
 
   const navigateLesson = (direction: 'prev' | 'next') => {
     const allLessons = getAllLessons();
     if (!currentLesson) return;
-
-    const currentIndex = allLessons.findIndex(
-      (lesson) => lesson.id === currentLesson.id
-    );
-    if (currentIndex === -1) return;
-
-    let newIndex;
-    if (direction === 'prev') {
-      newIndex = currentIndex > 0 ? currentIndex - 1 : allLessons.length - 1;
-    } else {
-      newIndex = currentIndex < allLessons.length - 1 ? currentIndex + 1 : 0;
-    }
-
+    const idx = allLessons.findIndex((l) => l.id === currentLesson.id);
+    if (idx === -1) return;
+    const newIndex =
+      direction === 'prev'
+        ? idx > 0
+          ? idx - 1
+          : allLessons.length - 1
+        : idx < allLessons.length - 1
+          ? idx + 1
+          : 0;
     setCurrentLesson(allLessons[newIndex]);
   };
 
+  // --- Quiz states (giữ nguyên) ---
+  const [quizStarted, setQuizStarted] = useState(false);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [selectedAnswers, setSelectedAnswers] = useState<
+    Record<number, number[]>
+  >({});
+  const [showResults, setShowResults] = useState(false);
+
+  const handleAnswerSelect = (
+    questionId: number,
+    answerId: number,
+    maxChoices: number
+  ) => {
+    setSelectedAnswers((prev) => {
+      const current = prev[questionId] || [];
+      if (maxChoices === 0 || maxChoices > 1) {
+        if (current.includes(answerId))
+          return {
+            ...prev,
+            [questionId]: current.filter((id) => id !== answerId)
+          };
+        const newAnswers =
+          maxChoices === 0
+            ? [...current, answerId]
+            : [...current, answerId].slice(0, maxChoices);
+        return { ...prev, [questionId]: newAnswers };
+      } else {
+        return { ...prev, [questionId]: [answerId] };
+      }
+    });
+  };
+
+  const calculateScore = (topic: Topic) => {
+    let correct = 0;
+    let total = topic.topicQuestions.length;
+    topic.topicQuestions.forEach((q) => {
+      const userAnswers = selectedAnswers[q.id] || [];
+      const correctAnswers = q.topicQuestionAnswers
+        .filter((a) => a.isCorrect)
+        .map((a) => a.id);
+      const isCorrect =
+        userAnswers.length === correctAnswers.length &&
+        userAnswers.every((id) => correctAnswers.includes(id));
+      if (isCorrect) correct++;
+    });
+    return {
+      correct,
+      total,
+      percentage: total ? Math.round((correct / total) * 100) : 0
+    };
+  };
+
+  const resetQuiz = () => {
+    setQuizStarted(false);
+    setCurrentQuestionIndex(0);
+    setSelectedAnswers({});
+    setShowResults(false);
+  };
+
+  const exitQuiz = () => {
+    setCurrentQuiz(null);
+    resetQuiz();
+  };
+
+  // --- Player handlers ---
+  const onPlayerReady: YouTubeProps['onReady'] = (e) => {
+    playerRef.current = e.target;
+    const dur = Math.floor(e.target.getDuration?.() || 0);
+    setYtDuration(dur);
+
+    if (currentLesson) {
+      const saved = Number(
+        localStorage.getItem(`lesson:${currentLesson.id}:lastTime`) || 0
+      );
+      if (saved > 3) e.target.seekTo(saved, true);
+    }
+  };
+  const onStateChange: YouTubeProps['onStateChange'] = () => {};
+
+  // --- Autosave current time ---
+  useEffect(() => {
+    if (!currentLesson) return;
+    let timer: number | undefined;
+    const tick = () => {
+      const tNow = Math.floor(playerRef.current?.getCurrentTime?.() ?? 0);
+      localStorage.setItem(`lesson:${currentLesson.id}:lastTime`, String(tNow));
+    };
+    if (playerRef.current) timer = window.setInterval(tick, 3000);
+    return () => {
+      if (timer) window.clearInterval(timer);
+    };
+  }, [currentLesson?.id]);
+
+  // --- Notes load/save ---
+  useEffect(() => {
+    if (!currentLesson) return;
+    const raw = localStorage.getItem(`lesson:${currentLesson.id}:notes`);
+    setNotes(raw ? JSON.parse(raw) : []);
+  }, [currentLesson?.id]);
+
+  useEffect(() => {
+    if (!currentLesson) return;
+    localStorage.setItem(
+      `lesson:${currentLesson.id}:notes`,
+      JSON.stringify(notes)
+    );
+  }, [notes, currentLesson?.id]);
+
+  const onAddNote = () => {
+    if (!playerRef.current || !currentLesson) return;
+    const tNow = Math.floor(playerRef.current.getCurrentTime() || 0);
+    const text =
+      window.prompt(`Nội dung ghi chú tại ${formatTime(tNow)}:`) || '';
+    if (!text.trim()) return;
+    setNotes((prev) => [
+      ...prev,
+      {
+        id: uuid(),
+        time: tNow,
+        text: text.trim(),
+        createdAt: new Date().toISOString()
+      }
+    ]);
+  };
+
+  // --- Watched ranges ---
+  useEffect(() => {
+    if (!currentLesson) return;
+    const raw = localStorage.getItem(`lesson:${currentLesson.id}:ranges`);
+    setWatchedRanges(raw ? JSON.parse(raw) : []);
+
+    let last = 0;
+    let t: number | undefined;
+
+    const tick = () => {
+      const now = Math.floor(playerRef.current?.getCurrentTime?.() ?? 0);
+      setWatchedRanges((prev) => {
+        let next: [number, number][];
+        if (Math.abs(now - last) > 5 || prev.length === 0) {
+          next = mergeRanges([...prev, [now, now]]);
+        } else {
+          next = [...prev];
+          next[next.length - 1][1] = now;
+          next = mergeRanges(next);
+        }
+        if (currentLesson)
+          localStorage.setItem(
+            `lesson:${currentLesson.id}:ranges`,
+            JSON.stringify(next)
+          );
+        return next;
+      });
+      last = now;
+    };
+
+    if (playerRef.current) t = window.setInterval(tick, 2000);
+    return () => {
+      if (t) window.clearInterval(t);
+    };
+  }, [currentLesson?.id]);
+
+  const watchedSeconds = watchedRanges.reduce(
+    (sum, [s, e]) => sum + Math.max(0, e - s),
+    0
+  );
+  const totalSeconds =
+    ytDuration || (currentLesson ? currentLesson.duration * 60 : 0);
+  const percentWatched = totalSeconds
+    ? Math.min(100, Math.round((watchedSeconds / totalSeconds) * 100))
+    : 0;
+
+  const topicForQuiz = currentQuiz
+    ? courseData.find((t) => t.id === currentQuiz.topicId) || null
+    : null;
+  const videoId = currentLesson
+    ? getYouTubeVideoId(currentLesson.videoUrl)
+    : '';
+
   return (
     <div className="flex h-screen flex-col bg-gray-900">
-      {/* Header */}
-      <header className="flex items-center justify-between border-b border-gray-700 bg-gray-800 px-4 py-3">
-        <div className="flex items-center gap-4">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="text-white hover:bg-gray-700"
-          >
-            <ChevronLeft className="h-5 w-5" />
-          </Button>
-          <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 font-bold text-white">
-              AP
-            </div>
-            <span className="font-medium text-white">Kiến Thức Nhập Môn</span>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-6">
-          <div className="flex items-center gap-2 text-sm">
-            <Badge className="bg-blue-600 hover:bg-blue-700">32%</Badge>
-            <span className="text-gray-300">3/12 bài học</span>
-          </div>
-          <Button
-            variant="ghost"
-            className="text-gray-300 hover:bg-gray-700 hover:text-white"
-          >
-            <User className="mr-2 h-4 w-4" />
-            Ghi chú
-          </Button>
-          <Button
-            variant="ghost"
-            className="text-gray-300 hover:bg-gray-700 hover:text-white"
-          >
-            <BookOpen className="mr-2 h-4 w-4" />
-            Hướng dẫn
-          </Button>
-        </div>
-      </header>
+      <HeaderBar
+        percentWatched={percentWatched}
+        currentLessonTitle={currentLesson?.title}
+      />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Video Player Section */}
+        {/* Player + Info */}
         <div className="flex flex-1 flex-col bg-black">
-          {/* Video Player */}
-          <div className="relative flex flex-1 items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
-            {currentLesson && currentLesson.videoUrl ? (
-              <div className="h-full w-full">
-                <iframe
-                  width="100%"
-                  height="100%"
-                  src={`https://www.youtube.com/embed/${getYouTubeVideoId(currentLesson.videoUrl)}?autoplay=1&rel=0&modestbranding=1`}
-                  title={currentLesson.title}
-                  frameBorder="0"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                  allowFullScreen
-                  className="h-full w-full"
-                />
-              </div>
-            ) : (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="flex h-64 w-96 items-center justify-center rounded-3xl bg-gray-700/50 backdrop-blur-sm">
-                  <Button
-                    size="lg"
-                    className="h-20 w-20 rounded-full bg-orange-500 shadow-2xl hover:bg-orange-600"
-                    onClick={() => setIsPlaying(!isPlaying)}
-                  >
-                    <Play className="ml-1 h-8 w-8 fill-current text-white" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
+          <VideoSection
+            currentLesson={currentLesson}
+            currentQuiz={currentQuiz}
+            topicForQuiz={topicForQuiz}
+            videoId={videoId}
+            onPlayerReady={onPlayerReady}
+            onStateChange={onStateChange}
+            isPlaying={isPlaying}
+            setIsPlaying={setIsPlaying}
+            // quiz props
+            quizStarted={quizStarted}
+            setQuizStarted={setQuizStarted}
+            currentQuestionIndex={currentQuestionIndex}
+            setCurrentQuestionIndex={setCurrentQuestionIndex}
+            selectedAnswers={selectedAnswers}
+            handleAnswerSelect={handleAnswerSelect}
+            showResults={showResults}
+            setShowResults={setShowResults}
+            calculateScore={calculateScore}
+            resetQuiz={resetQuiz}
+            exitQuiz={exitQuiz}
+          />
 
-          {/* Lesson Info */}
-          <div className="border-t border-gray-800 bg-gray-900 p-6">
-            <div className="max-w-4xl">
-              <h1 className="mb-3 text-2xl font-bold text-white">
-                {currentLesson?.title || 'Chọn bài học để bắt đầu'}
-              </h1>
-              <p className="mb-4 text-sm text-gray-400">
-                {currentLesson?.description ||
-                  'Mô tả bài học sẽ hiển thị ở đây'}
-              </p>
-
-              <div className="mb-6 flex items-center gap-4">
-                <Button className="bg-gray-800 text-white hover:bg-gray-700">
-                  <Clock className="mr-2 h-4 w-4" />
-                  Thêm ghi chú tại 00:00
-                </Button>
-                {currentLesson && (
-                  <Badge className="bg-blue-600 hover:bg-blue-700">
-                    {currentLesson.duration} phút
-                  </Badge>
-                )}
-              </div>
-
-              <div className="prose prose-invert max-w-none">
-                <p className="mb-4 text-gray-300">
-                  {currentLesson?.content ||
-                    'Nội dung bài học sẽ hiển thị ở đây'}
-                </p>
-              </div>
-
-              <div className="mt-8 flex items-center gap-4 border-t border-gray-800 pt-6">
-                <Button
-                  variant="outline"
-                  className="border-gray-700 bg-gray-800 text-gray-300 hover:bg-gray-700"
-                  onClick={() => navigateLesson('prev')}
-                >
-                  <ChevronLeft className="mr-2 h-4 w-4" />
-                  BÀI TRƯỚC
-                </Button>
-                <Button
-                  className="bg-orange-500 text-white hover:bg-orange-600"
-                  onClick={() => navigateLesson('next')}
-                >
-                  BÀI TIẾP THEO
-                  <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
-              </div>
-            </div>
-          </div>
+          <LessonInfo
+            currentLesson={currentLesson}
+            currentQuizTitle={currentQuiz?.topicTitle}
+            currentQuizCount={currentQuiz?.questionCount}
+            currentTime={playerRef.current?.getCurrentTime?.() ?? 0}
+            onAddNote={onAddNote}
+            durationMinutes={currentLesson?.duration}
+            percentWatched={percentWatched}
+            content={currentLesson?.content}
+            notes={notes}
+            onJumpNote={(t) => playerRef.current?.seekTo(t, true)}
+            onDeleteNote={(id) =>
+              setNotes((prev) => prev.filter((x) => x.id !== id))
+            }
+            onPrevLesson={() => navigateLesson('prev')}
+            onNextLesson={() => navigateLesson('next')}
+            onAskNote={(note) => {
+              console.log(note);
+            }}
+          />
         </div>
 
-        {/* Sidebar - Course Content */}
-        <div className="flex w-96 flex-col border-l border-gray-200 bg-white">
-          <div className="border-b border-gray-200 p-4">
-            <h2 className="text-lg font-bold text-gray-900">
-              Nội dung khóa học
-            </h2>
-          </div>
-
-          <div className="flex-1 overflow-y-auto">
-            <div className="p-2">
-              {courseData.map((section) => (
-                <div key={section.id} className="mb-2">
-                  <div
-                    className="group flex cursor-pointer items-center justify-between rounded-lg p-3 hover:bg-gray-50"
-                    onClick={() => toggleSection(section.id)}
-                  >
-                    <div className="flex flex-1 items-center gap-2">
-                      {expandedSections.includes(section.id) ? (
-                        <ChevronUp className="h-4 w-4 text-gray-400" />
-                      ) : (
-                        <ChevronDown className="h-4 w-4 text-gray-400" />
-                      )}
-                      <span className="text-sm font-medium text-gray-900">
-                        {section.title}
-                      </span>
-                    </div>
-                    <span className="text-xs text-gray-500">
-                      {section.lessons.length} bài
-                    </span>
-                  </div>
-
-                  {expandedSections.includes(section.id) &&
-                    section.lessons.length > 0 && (
-                      <div className="ml-2 mt-1 space-y-1">
-                        {section.lessons.map((lesson) => {
-                          const isActive = currentLesson?.id === lesson.id;
-                          const isLocked = !lesson.isFree;
-
-                          return (
-                            <div
-                              key={lesson.id}
-                              className={`flex cursor-pointer items-start gap-3 rounded-lg p-3 transition-all ${
-                                isActive
-                                  ? 'border-l-4 border-orange-500 bg-orange-50'
-                                  : 'hover:bg-gray-50'
-                              }`}
-                              onClick={() => !isLocked && selectLesson(lesson)}
-                            >
-                              <div className="mt-0.5 flex-shrink-0">
-                                {isLocked ? (
-                                  <Lock className="h-5 w-5 text-gray-400" />
-                                ) : isActive ? (
-                                  <div className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-500">
-                                    <Play className="h-3 w-3 fill-current text-white" />
-                                  </div>
-                                ) : (
-                                  <div className="h-5 w-5 rounded-full border-2 border-gray-300" />
-                                )}
-                              </div>
-                              <div className="min-w-0 flex-1">
-                                <p
-                                  className={`mb-1 text-sm leading-snug ${
-                                    isActive
-                                      ? 'font-medium text-orange-600'
-                                      : isLocked
-                                        ? 'text-gray-400'
-                                        : 'text-gray-700'
-                                  }`}
-                                >
-                                  {lesson.title}
-                                </p>
-                                <span className="text-xs text-gray-500">
-                                  {lesson.duration} phút
-                                </span>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Chat Button */}
-          <div className="border-t border-gray-200 p-4">
-            <Button className="w-full rounded-full bg-orange-500 text-white hover:bg-orange-600">
-              <MessageCircle className="mr-2 h-4 w-4" />
-              Hỏi đáp
-            </Button>
-          </div>
-        </div>
+        {/* Sidebar */}
+        <Sidebar
+          courseData={courseData}
+          expandedSections={expandedSections}
+          toggleSection={toggleSection}
+          currentLesson={currentLesson}
+          currentQuiz={currentQuiz}
+          selectLesson={selectLesson}
+          selectQuiz={selectQuiz}
+        />
       </div>
     </div>
   );
