@@ -132,6 +132,14 @@ export default function LessonInfo({
         </div>
       </div>
 
+      <div
+        className="fixed bottom-0 right-0 w-[250px] p-4"
+        onClick={() => setIsChatOpen(true)}
+      >
+        <button className="w-full rounded-full bg-orange-500 py-3 font-semibold text-white transition-colors hover:bg-orange-600">
+          Hỏi đáp
+        </button>
+      </div>
       <ChatDialog
         isOpen={isChatOpen}
         onClose={() => setIsChatOpen(false)}

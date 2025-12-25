@@ -119,7 +119,30 @@ export default function Add() {
             />
           </div>
 
-         
+          <div className="space-y-2">
+            <Label htmlFor="orderIndex">Thứ tự</Label>
+            <div className="relative">
+              <Input
+                id="orderIndex"
+                type="number"
+                placeholder="Thứ tự..."
+                value={orderIndex}
+                onChange={(e) =>
+                  setOrderIndex(
+                    e.target.value ? parseInt(e.target.value, 10) : ''
+                  )
+                }
+                required
+                className="pr-20"
+              />
+              <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-green-600 font-medium">
+                Tự động
+              </span>
+            </div>
+            <p className="text-xs text-gray-500">
+              Thứ tự được tự động setup dựa trên chủ đề cuối
+            </p>
+          </div>
         </CardContent>
         <CardFooter>
           <Button type="submit" className="w-full" disabled={isPending}>

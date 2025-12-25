@@ -1,4 +1,3 @@
-import React from 'react';
 import { Handle, Position } from '@xyflow/react';
 
 const bandColor = { intro: '#84cc16', core: '#f59e0b', advance: '#ef4444' };

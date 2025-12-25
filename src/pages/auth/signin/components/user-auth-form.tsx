@@ -63,8 +63,8 @@ export default function UserAuthForm() {
       };
       const res = await login(model);
       console.log(res);
-      if (res) {
-        const token = res.data;
+      if (res as any) {
+        const token = (res as any).data;
         __helpers.cookie_set('AT', token);
         refetch();
         // window.location.href = '/';

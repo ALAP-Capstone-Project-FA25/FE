@@ -9,7 +9,7 @@ export function OverViewTab() {
   const page = Number(searchParams.get('page') || 1);
   const pageLimit = Number(searchParams.get('limit') || 10);
   const keyword = searchParams.get('keyword') || '';
-  const { data, isPending, refetch } = useGetUsersByPagingByRole(
+  const { data, isPending } = useGetUsersByPagingByRole(
     page,
     pageLimit,
     keyword,
@@ -38,7 +38,6 @@ export function OverViewTab() {
             page={totalRecords}
             totalUsers={totalRecords}
             pageCount={pageCount}
-            onRefresh={refetch}
           />
         )}
       </div>

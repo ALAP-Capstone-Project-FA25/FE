@@ -22,6 +22,7 @@ export interface Lesson {
   title: string;
   description: string;
   content: string;
+  isCurrent: boolean;
   videoUrl: string;
   duration: number; // phút
   orderIndex: number;
@@ -36,6 +37,7 @@ export interface Topic {
   title: string;
   description: string;
   orderIndex: number;
+  isCurrent: boolean;
   courseId: number;
   lessons: Lesson[];
   topicQuestions: TopicQuestion[];

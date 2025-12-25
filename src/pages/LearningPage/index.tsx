@@ -1,30 +1,50 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import HeaderBar from './HeaderBar';
 import VideoSection from './VideoSection';
+import DocumentViewer from './DocumentViewer';
 import LessonInfo from './LessonInfo';
 import Sidebar from './Sidebar';
-import { formatTime, getYouTubeVideoId, mergeRanges, uuid } from './utils';
+import AddNoteDialog from './AddNoteDialog';
+import DeleteNoteDialog from './DeleteNoteDialog';
+import { getYouTubeVideoId, mergeRanges, uuid } from './utils';
 import { Lesson, Note, QuizItem, Topic } from './types';
 import type { YouTubeProps } from 'react-youtube';
 import { useParams } from 'react-router-dom';
-import { useGetTopicsByPaging } from '@/queries/topic.query';
+import { useGetTopicsByPagingByStudent } from '@/queries/topic.query';
+import {
+  useGetUserCourseById,
+  useUpdateProgress
+} from '@/queries/use-course.query';
+import {
+  useGetLessonNoteByLessonId,
+  useCreateUpdateLessonNote,
+  useDeleteLessonNote
+} from '@/queries/lesson.query';
+import { LessonType } from '@/types/api.types';
 
 export default function VideoLearningPage() {
-  const [currentLesson, setCurrentLesson] = useState<Lesson | null>(null);
+  const [currentLesson, setCurrentLesson] = useState<any | null>(null);
   const [currentQuiz, setCurrentQuiz] = useState<QuizItem | null>(null);
   const [expandedSections, setExpandedSections] = useState<number[]>([]);
   const [isPlaying, setIsPlaying] = useState(false);
-
+  const { mutateAsync: updateProgress } = useUpdateProgress();
+  const { mutateAsync: createUpdateNote } = useCreateUpdateLessonNote();
+  const { mutateAsync: deleteNote } = useDeleteLessonNote();
   const playerRef = useRef<any>(null);
   const [ytDuration, setYtDuration] = useState<number>(0);
   const { id } = useParams();
+  const { data: userCourseData } = useGetUserCourseById(parseInt(id || '0'));
   const [notes, setNotes] = useState<Note[]>([]);
   const [watchedRanges, setWatchedRanges] = useState<[number, number][]>([]);
-  const { data: resCourse } = useGetTopicsByPaging(
+  const { data: resCourse } = useGetTopicsByPagingByStudent(
     1,
-    10,
+    20,
     '',
     parseInt(id || '0')
+  );
+
+  const { data: notesData, refetch: refetchNotes } = useGetLessonNoteByLessonId(
+    currentLesson?.id || 0
   );
 
   const courseData: Topic[] = useMemo(
@@ -32,16 +52,47 @@ export default function VideoLearningPage() {
     [resCourse]
   );
 
-  // --- init first lesson ---
   useEffect(() => {
     if (courseData.length > 0 && !currentLesson && !currentQuiz) {
-      const firstTopic = courseData[0];
-      if (firstTopic.lessons.length > 0) {
-        setCurrentLesson(firstTopic.lessons[0]);
-        setExpandedSections([firstTopic.id]);
+      const currentTopic = courseData.find((topic) => topic.isCurrent);
+
+      if (currentTopic) {
+        const currentLessonInTopic = currentTopic.lessons.find(
+          (lesson) => lesson.isCurrent
+        );
+
+        if (currentLessonInTopic) {
+          setCurrentLesson(currentLessonInTopic);
+          setExpandedSections([currentTopic.id]);
+        } else if (currentTopic.lessons.length > 0) {
+          setCurrentLesson(currentTopic.lessons[0]);
+          setExpandedSections([currentTopic.id]);
+        }
+      } else {
+        const firstTopic = courseData[0];
+        if (firstTopic && firstTopic.lessons.length > 0) {
+          setCurrentLesson(firstTopic.lessons[0]);
+          setExpandedSections([firstTopic.id]);
+        }
       }
     }
   }, [courseData, currentLesson, currentQuiz]);
+
+  // Tự động cập nhật tiến độ cho document sau 3 giây (để đảm bảo user đang xem)
+  useEffect(() => {
+    if (!currentLesson || currentLesson.lessonType !== LessonType.DOCUMENT) {
+      return;
+    }
+
+    const timer = setTimeout(async () => {
+      await updateProgress({
+        topicId: currentLesson.topicId,
+        lessonId: currentLesson.id
+      });
+    }, 3000); // 3 giây
+
+    return () => clearTimeout(timer);
+  }, [currentLesson?.id, currentLesson?.lessonType]);
 
   const toggleSection = (sectionId: number) => {
     setExpandedSections((prev) =>
@@ -51,10 +102,16 @@ export default function VideoLearningPage() {
     );
   };
 
-  const selectLesson = (lesson: Lesson) => {
+  const selectLesson = async (lesson: Lesson) => {
     setCurrentLesson(lesson);
     setCurrentQuiz(null);
     setIsPlaying(true);
+    
+    // Cập nhật tiến độ khi chọn lesson
+    await updateProgress({
+      topicId: lesson.topicId,
+      lessonId: lesson.id
+    });
   };
 
   const selectQuiz = (quiz: QuizItem) => {
@@ -62,15 +119,24 @@ export default function VideoLearningPage() {
     setCurrentLesson(null);
   };
 
-  const getAllLessons = (): Lesson[] =>
-    courseData
-      .flatMap((t) => t.lessons)
-      .sort((a, b) => a.orderIndex - b.orderIndex);
+  const getAllLessons = (): Lesson[] => {
+    // Sort topics theo orderIndex trước
+    const sortedTopics = [...courseData].sort((a, b) => a.orderIndex - b.orderIndex);
+    
+    // Với mỗi topic đã sort, lấy lessons và sort theo orderIndex
+    const allLessons: Lesson[] = [];
+    sortedTopics.forEach((topic) => {
+      const sortedLessons = [...topic.lessons].sort((a, b) => a.orderIndex - b.orderIndex);
+      allLessons.push(...sortedLessons);
+    });
+    
+    return allLessons;
+  };
 
-  const navigateLesson = (direction: 'prev' | 'next') => {
+  const navigateLesson = async (direction: 'prev' | 'next') => {
     const allLessons = getAllLessons();
     if (!currentLesson) return;
-    const idx = allLessons.findIndex((l) => l.id === currentLesson.id);
+    const idx = allLessons.findIndex((l) => l.id == currentLesson.id);
     if (idx === -1) return;
     const newIndex =
       direction === 'prev'
@@ -81,9 +147,14 @@ export default function VideoLearningPage() {
           ? idx + 1
           : 0;
     setCurrentLesson(allLessons[newIndex]);
+    setExpandedSections([allLessons[newIndex].topicId]);
+
+    await updateProgress({
+      topicId: allLessons[newIndex].topicId,
+      lessonId: allLessons[newIndex].id
+    });
   };
 
-  // --- Quiz states (giữ nguyên) ---
   const [quizStarted, setQuizStarted] = useState(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<
@@ -147,7 +218,6 @@ export default function VideoLearningPage() {
     resetQuiz();
   };
 
-  // --- Player handlers ---
   const onPlayerReady: YouTubeProps['onReady'] = (e) => {
     playerRef.current = e.target;
     const dur = Math.floor(e.target.getDuration?.() || 0);
@@ -160,9 +230,9 @@ export default function VideoLearningPage() {
       if (saved > 3) e.target.seekTo(saved, true);
     }
   };
+
   const onStateChange: YouTubeProps['onStateChange'] = () => {};
 
-  // --- Autosave current time ---
   useEffect(() => {
     if (!currentLesson) return;
     let timer: number | undefined;
@@ -176,39 +246,107 @@ export default function VideoLearningPage() {
     };
   }, [currentLesson?.id]);
 
-  // --- Notes load/save ---
   useEffect(() => {
     if (!currentLesson) return;
-    const raw = localStorage.getItem(`lesson:${currentLesson.id}:notes`);
-    setNotes(raw ? JSON.parse(raw) : []);
-  }, [currentLesson?.id]);
+    if (notesData) {
+      setNotes(notesData || []);
+    }
+  }, [currentLesson?.id, notesData]);
 
-  useEffect(() => {
-    if (!currentLesson) return;
-    localStorage.setItem(
-      `lesson:${currentLesson.id}:notes`,
-      JSON.stringify(notes)
-    );
-  }, [notes, currentLesson?.id]);
+  // State cho Add Note Dialog
+  const [showAddNoteDialog, setShowAddNoteDialog] = useState(false);
+  const [isSavingNote, setIsSavingNote] = useState(false);
 
+  // State cho Delete Note Dialog
+  const [showDeleteNoteDialog, setShowDeleteNoteDialog] = useState(false);
+  const [noteToDelete, setNoteToDelete] = useState<Note | null>(null);
+  const [isDeletingNote, setIsDeletingNote] = useState(false);
+
+  // Hàm mở dialog thêm note
   const onAddNote = () => {
     if (!playerRef.current || !currentLesson) return;
-    const tNow = Math.floor(playerRef.current.getCurrentTime() || 0);
-    const text =
-      window.prompt(`Nội dung ghi chú tại ${formatTime(tNow)}:`) || '';
-    if (!text.trim()) return;
-    setNotes((prev) => [
-      ...prev,
-      {
-        id: uuid(),
-        time: tNow,
-        text: text.trim(),
-        createdAt: new Date().toISOString()
-      }
-    ]);
+    setShowAddNoteDialog(true);
   };
 
-  // --- Watched ranges ---
+  // Hàm lưu note - gọi API
+  const handleSaveNote = async (text: string) => {
+    if (!playerRef.current || !currentLesson) return;
+    const tNow = Math.floor(playerRef.current.getCurrentTime() || 0);
+
+    setIsSavingNote(true);
+
+    const newNote: Note = {
+      id: uuid(),
+      time: tNow,
+      text: text.trim(),
+      createdAt: new Date().toISOString()
+    };
+
+    try {
+      // Gọi API để lưu note
+      await createUpdateNote({
+        lessonId: currentLesson.id,
+        time: tNow,
+        text: text.trim()
+      });
+
+      // Cập nhật local state
+      setNotes((prev) => [...prev, newNote]);
+
+      // Hoặc refetch để đảm bảo sync với server
+      await refetchNotes();
+
+      // Đóng dialog
+      setShowAddNoteDialog(false);
+    } catch (error) {
+      console.error('Error creating note:', error);
+      alert('Không thể tạo ghi chú. Vui lòng thử lại!');
+    } finally {
+      setIsSavingNote(false);
+    }
+  };
+
+  // Hàm mở dialog xóa note
+  const onDeleteNote = (noteId: string) => {
+    const note = notes.find((n) => n.id === noteId);
+    if (note) {
+      setNoteToDelete(note);
+      setShowDeleteNoteDialog(true);
+    }
+  };
+
+  // Hàm xác nhận xóa note - gọi API
+  const handleConfirmDeleteNote = async () => {
+    if (!noteToDelete || !currentLesson) return;
+
+    setIsDeletingNote(true);
+
+    try {
+      // Gọi API xóa note
+      const [err] = await deleteNote(parseInt(noteToDelete.id));
+
+      if (err) {
+        alert('Không thể xóa ghi chú. Vui lòng thử lại!');
+        return;
+      }
+
+      // Cập nhật local state
+      setNotes((prev) => prev.filter((x) => x.id !== noteToDelete.id));
+
+      // Refetch để đảm bảo sync
+      await refetchNotes();
+
+      // Đóng dialog
+      setShowDeleteNoteDialog(false);
+      setNoteToDelete(null);
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      alert('Không thể xóa ghi chú. Vui lòng thử lại!');
+    } finally {
+      setIsDeletingNote(false);
+    }
+  };
+
   useEffect(() => {
     if (!currentLesson) return;
     const raw = localStorage.getItem(`lesson:${currentLesson.id}:ranges`);
@@ -264,35 +402,42 @@ export default function VideoLearningPage() {
   return (
     <div className="flex h-screen flex-col bg-gray-900">
       <HeaderBar
-        percentWatched={percentWatched}
+        percentWatched={userCourseData?.progressPercent || 0}
+        course={userCourseData}
         currentLessonTitle={currentLesson?.title}
       />
 
       <div className="flex flex-1 overflow-hidden">
-        {/* Player + Info */}
-        <div className="flex flex-1 flex-col bg-black">
-          <VideoSection
-            currentLesson={currentLesson}
-            currentQuiz={currentQuiz}
-            topicForQuiz={topicForQuiz}
-            videoId={videoId}
-            onPlayerReady={onPlayerReady}
-            onStateChange={onStateChange}
-            isPlaying={isPlaying}
-            setIsPlaying={setIsPlaying}
-            // quiz props
-            quizStarted={quizStarted}
-            setQuizStarted={setQuizStarted}
-            currentQuestionIndex={currentQuestionIndex}
-            setCurrentQuestionIndex={setCurrentQuestionIndex}
-            selectedAnswers={selectedAnswers}
-            handleAnswerSelect={handleAnswerSelect}
-            showResults={showResults}
-            setShowResults={setShowResults}
-            calculateScore={calculateScore}
-            resetQuiz={resetQuiz}
-            exitQuiz={exitQuiz}
-          />
+        <div className="flex flex-1 overflow-scroll flex-col bg-black">
+          {currentLesson?.lessonType === LessonType.DOCUMENT ? (
+            <DocumentViewer
+              documentUrl={currentLesson.documentUrl}
+              documentContent={currentLesson.documentContent}
+              title={currentLesson.title}
+            />
+          ) : (
+            <VideoSection
+              currentLesson={currentLesson}
+              currentQuiz={currentQuiz}
+              topicForQuiz={topicForQuiz}
+              videoId={videoId}
+              onPlayerReady={onPlayerReady}
+              onStateChange={onStateChange}
+              isPlaying={isPlaying}
+              setIsPlaying={setIsPlaying}
+              quizStarted={quizStarted}
+              setQuizStarted={setQuizStarted}
+              currentQuestionIndex={currentQuestionIndex}
+              setCurrentQuestionIndex={setCurrentQuestionIndex}
+              selectedAnswers={selectedAnswers}
+              handleAnswerSelect={handleAnswerSelect}
+              showResults={showResults}
+              setShowResults={setShowResults}
+              calculateScore={calculateScore}
+              resetQuiz={resetQuiz}
+              exitQuiz={exitQuiz}
+            />
+          )}
 
           <LessonInfo
             currentLesson={currentLesson}
@@ -305,9 +450,7 @@ export default function VideoLearningPage() {
             content={currentLesson?.content}
             notes={notes}
             onJumpNote={(t) => playerRef.current?.seekTo(t, true)}
-            onDeleteNote={(id) =>
-              setNotes((prev) => prev.filter((x) => x.id !== id))
-            }
+            onDeleteNote={onDeleteNote}
             onPrevLesson={() => navigateLesson('prev')}
             onNextLesson={() => navigateLesson('next')}
             onAskNote={(note) => {
@@ -316,7 +459,6 @@ export default function VideoLearningPage() {
           />
         </div>
 
-        {/* Sidebar */}
         <Sidebar
           courseData={courseData}
           expandedSections={expandedSections}
@@ -327,6 +469,24 @@ export default function VideoLearningPage() {
           selectQuiz={selectQuiz}
         />
       </div>
+
+      {/* Add Note Dialog */}
+      <AddNoteDialog
+        open={showAddNoteDialog}
+        onOpenChange={setShowAddNoteDialog}
+        currentTime={playerRef.current?.getCurrentTime?.() ?? 0}
+        onSave={handleSaveNote}
+        isSaving={isSavingNote}
+      />
+
+      {/* Delete Note Dialog */}
+      <DeleteNoteDialog
+        open={showDeleteNoteDialog}
+        onOpenChange={setShowDeleteNoteDialog}
+        onConfirm={handleConfirmDeleteNote}
+        noteText={noteToDelete?.text}
+        isDeleting={isDeletingNote}
+      />
     </div>
   );
 }

@@ -248,9 +248,9 @@ export default function PricingPage() {
 
                       {/* CTA copy */}
                       <p className="mb-6 text-sm text-gray-600">
-                        Có thể tạm dừng hoặc huỷ bất cứ lúc nào.
+                        Các gói nhằm mục đích phục vụ các khóa học trong hệ
+                        thống
                         <br />
-                        Hoàn tiền trong 7 ngày nếu không hài lòng.
                       </p>
 
                       {/* CTA Button */}

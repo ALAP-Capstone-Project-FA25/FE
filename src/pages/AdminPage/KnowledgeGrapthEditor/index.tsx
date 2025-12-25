@@ -1,10 +1,4 @@
-import React, {
-  useState,
-  useCallback,
-  useMemo,
-  useEffect,
-  useRef
-} from 'react';
+import React, { useState, useCallback, useMemo } from 'react';
 import ReactFlow, {
   Node,
   Edge,
@@ -17,11 +11,9 @@ import ReactFlow, {
   MarkerType,
   Handle,
   Position,
+  addEdge,
   Connection,
-  OnConnect,
-  BaseEdge,
-  EdgeLabelRenderer,
-  getBezierPath
+  OnConnect
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 import {
@@ -41,9 +33,7 @@ import {
   ExternalLink,
   GripVertical,
   Copy,
-  Loader2,
-  Upload,
-  FileText
+  Loader2
 } from 'lucide-react';
 import { useParams } from 'react-router-dom';
 import {
@@ -54,7 +44,7 @@ import { toast } from '@/components/ui/use-toast';
 import { useGetListCourseByCategoryId } from '@/queries/course.query';
 
 // ============================================
-// INTERFACES
+// INTERFACES 
 // ============================================
 
 interface Resource {
@@ -66,7 +56,7 @@ interface Resource {
 
 interface NodeData {
   label: string;
-  category: string; // Can be predefined or custom
+  category: 'foundation' | 'core' | 'advanced' | 'optional';
   description: string;
   concepts: string[];
   examples: string[];
@@ -93,7 +83,7 @@ interface Course {
 // API Response Interfaces
 interface ApiNodeData {
   label: string;
-  category: string; // Can be predefined or custom
+  category: 'foundation' | 'core' | 'advanced' | 'optional';
   description: string;
   concepts: string[];
   examples: string[];
@@ -114,7 +104,7 @@ interface ApiEdge {
   id: string;
   source: string;
   target: string;
-  type: string; // Can be 'required', 'optional', or custom relationship types
+  type: 'required' | 'optional';
 }
 
 interface ApiResponse {
@@ -123,102 +113,6 @@ interface ApiResponse {
   nodes: ApiNode[];
   edges: ApiEdge[];
 }
-
-// ============================================
-// RELATIONSHIP TYPES CONSTANTS
-// ============================================
-
-const RELATIONSHIP_TYPES = [
-  { value: 'required', label: 'Bắt buộc' },
-  { value: 'optional', label: 'Khuyên học' },
-  { value: 'foundation_of', label: 'Là nền tảng của' },
-  { value: 'equivalent_to', label: 'Tương đương với' },
-  { value: 'leads_to', label: 'Dẫn đến' },
-  { value: 'prerequisite_for', label: 'Yêu cầu cho' },
-  { value: 'concept_of', label: 'Khái niệm của' },
-  { value: 'part_of', label: 'Một phần của' },
-  { value: 'application_of', label: 'Ứng dụng của' },
-  { value: 'example_of', label: 'Ví dụ của' },
-  { value: 'related_to', label: 'Liên quan đến' },
-  { value: 'custom', label: 'Tùy chỉnh' }
-] as const;
-
-const RELATIONSHIP_TYPE_LABELS: Record<string, string> = {
-  required: 'Bắt buộc',
-  optional: 'Khuyên học',
-  foundation_of: 'Là nền tảng của',
-  equivalent_to: 'Tương đương với',
-  leads_to: 'Dẫn đến',
-  prerequisite_for: 'Yêu cầu cho',
-  concept_of: 'Khái niệm của',
-  part_of: 'Một phần của',
-  application_of: 'Ứng dụng của',
-  example_of: 'Ví dụ của',
-  related_to: 'Liên quan đến'
-};
-
-const getRelationshipTypeLabel = (type: string): string => {
-  return RELATIONSHIP_TYPE_LABELS[type] || type;
-};
-
-const getRelationshipTypeStyle = (type: string) => {
-  switch (type) {
-    case 'required':
-      return { stroke: '#3b82f6', strokeWidth: 3, strokeDasharray: undefined };
-    case 'optional':
-      return { stroke: '#10b981', strokeWidth: 2, strokeDasharray: '5,5' };
-    case 'foundation_of':
-      return { stroke: '#f97316', strokeWidth: 3, strokeDasharray: undefined };
-    case 'equivalent_to':
-      return { stroke: '#a855f7', strokeWidth: 3, strokeDasharray: undefined };
-    case 'leads_to':
-      return { stroke: '#14b8a6', strokeWidth: 3, strokeDasharray: undefined };
-    case 'prerequisite_for':
-      return { stroke: '#f59e0b', strokeWidth: 3, strokeDasharray: undefined };
-    case 'concept_of':
-      return { stroke: '#ec4899', strokeWidth: 2, strokeDasharray: '8,4' };
-    case 'part_of':
-      return { stroke: '#8b5cf6', strokeWidth: 2, strokeDasharray: '6,3' };
-    case 'application_of':
-      return { stroke: '#06b6d4', strokeWidth: 2, strokeDasharray: undefined };
-    case 'example_of':
-      return { stroke: '#84cc16', strokeWidth: 2, strokeDasharray: '4,2' };
-    case 'related_to':
-      return { stroke: '#f43f5e', strokeWidth: 2, strokeDasharray: '10,5' };
-    default:
-      // Custom types
-      return { stroke: '#6b7280', strokeWidth: 2, strokeDasharray: undefined };
-  }
-};
-
-const getRelationshipTypeColor = (type: string): string => {
-  switch (type) {
-    case 'required':
-      return '#3b82f6';
-    case 'optional':
-      return '#10b981';
-    case 'foundation_of':
-      return '#f97316';
-    case 'equivalent_to':
-      return '#a855f7';
-    case 'leads_to':
-      return '#14b8a6';
-    case 'prerequisite_for':
-      return '#f59e0b';
-    case 'concept_of':
-      return '#ec4899';
-    case 'part_of':
-      return '#8b5cf6';
-    case 'application_of':
-      return '#06b6d4';
-    case 'example_of':
-      return '#84cc16';
-    case 'related_to':
-      return '#f43f5e';
-    default:
-      return '#6b7280';
-  }
-};
 
 // ============================================
 // TRANSFORM FUNCTIONS
@@ -248,38 +142,22 @@ const transformApiNodesToReactFlowNodes = (
 
 const transformApiEdgesToReactFlowEdges = (apiEdges: ApiEdge[]): Edge[] => {
   return apiEdges.map((apiEdge) => {
-    const relationshipType = apiEdge.type || 'required';
-    const style = getRelationshipTypeStyle(relationshipType);
-    const color = getRelationshipTypeColor(relationshipType);
-    const label = getRelationshipTypeLabel(relationshipType);
+    const isOptional = apiEdge.type === 'optional';
 
     return {
       id: apiEdge.id,
       source: apiEdge.source,
       target: apiEdge.target,
       type: 'smoothstep',
-      animated: relationshipType !== 'optional',
-      style: style,
-      label: label,
-      labelStyle: {
-        fill: color,
-        fontWeight: 600,
-        fontSize: 12
-      },
-      labelBgStyle: {
-        fill: '#ffffff',
-        fillOpacity: 0.8,
-        stroke: color,
-        strokeWidth: 1
-      },
+      animated: !isOptional,
+      style: isOptional
+        ? { stroke: '#10b981', strokeWidth: 2, strokeDasharray: '5,5' }
+        : { stroke: '#3b82f6', strokeWidth: 3 },
       markerEnd: {
         type: MarkerType.ArrowClosed,
-        color: color,
+        color: isOptional ? '#10b981' : '#3b82f6',
         width: 20,
         height: 20
-      },
-      data: {
-        relationshipType: relationshipType
       }
     };
   });
@@ -306,67 +184,50 @@ const KnowledgeNode = ({
         return 'bg-gradient-to-br from-rose-50 to-rose-100 border-rose-500';
       case 'optional':
         return 'bg-gradient-to-br from-emerald-50 to-emerald-100 border-emerald-500';
-      case 'intermediate':
-        return 'bg-gradient-to-br from-amber-50 to-amber-100 border-amber-500';
-      case 'expert':
-        return 'bg-gradient-to-br from-purple-50 to-purple-100 border-purple-500';
-      case 'beginner':
-        return 'bg-gradient-to-br from-green-50 to-green-100 border-green-500';
-      case 'specialized':
-        return 'bg-gradient-to-br from-indigo-50 to-indigo-100 border-indigo-500';
-      case 'practical':
-        return 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-500';
-      case 'theoretical':
-        return 'bg-gradient-to-br from-cyan-50 to-cyan-100 border-cyan-500';
       default:
-        // Custom categories - use a default style
-        return 'bg-gradient-to-br from-slate-50 to-slate-100 border-slate-500';
+        return 'bg-white border-slate-400';
     }
   };
 
   const getStatusOverlay = () => {
-    // Admin mode: không hiển thị opacity cho locked nodes
     switch (data.status) {
       case 'completed':
         return 'ring-2 ring-emerald-500 ring-offset-2';
       case 'in-progress':
         return 'ring-2 ring-sky-500 ring-offset-2 animate-pulse';
       case 'locked':
-        return ''; // Bỏ opacity-60 trong admin mode
+        return 'opacity-60';
       default:
         return '';
     }
   };
 
   const getStatusIcon = () => {
-    // Admin mode: không hiển thị lock icon
     switch (data.status) {
       case 'completed':
         return <CheckCircle2 className="h-5 w-5 text-emerald-600" />;
       case 'in-progress':
         return <TrendingUp className="h-5 w-5 text-sky-600" />;
       case 'locked':
-        return <Book className="h-5 w-5 text-violet-600" />; // Thay Lock bằng Book icon
+        return <Lock className="h-5 w-5 text-slate-400" />;
       default:
         return <Book className="h-5 w-5 text-violet-600" />;
     }
   };
 
   const getCategoryLabel = () => {
-    const categoryLabels: Record<string, string> = {
-      foundation: 'Nền tảng',
-      core: 'Cốt lõi',
-      advanced: 'Nâng cao',
-      optional: 'Khuyên học',
-      intermediate: 'Trung cấp',
-      expert: 'Chuyên sâu',
-      beginner: 'Người mới',
-      specialized: 'Chuyên ngành',
-      practical: 'Thực hành',
-      theoretical: 'Lý thuyết'
-    };
-
-    return categoryLabels[data.category] || data.category;
+    switch (data.category) {
+      case 'foundation':
+        return 'Nền tảng';
+      case 'core':
+        return 'Cốt lõi';
+      case 'advanced':
+        return 'Nâng cao';
+      case 'optional':
+        return 'Khuyên học';
+      default:
+        return '';
+    }
   };
 
   return (
@@ -417,82 +278,6 @@ const KnowledgeNode = ({
   );
 };
 
-// ============================================
-// CUSTOM EDGE COMPONENT
-// ============================================
-
-const CustomEdge = ({
-  id,
-  sourceX,
-  sourceY,
-  targetX,
-  targetY,
-  sourcePosition,
-  targetPosition,
-  style = {},
-  markerEnd,
-  label,
-  labelStyle,
-  labelBgStyle
-}: {
-  id: string;
-  sourceX: number;
-  sourceY: number;
-  targetX: number;
-  targetY: number;
-  sourcePosition: Position;
-  targetPosition: Position;
-  style?: any;
-  markerEnd?: any;
-  label?: string;
-  labelStyle?: any;
-  labelBgStyle?: any;
-}) => {
-  const [edgePath, labelX, labelY] = getBezierPath({
-    sourceX,
-    sourceY,
-    targetX,
-    targetY,
-    sourcePosition,
-    targetPosition
-  });
-
-  return (
-    <>
-      <BaseEdge path={edgePath} markerEnd={markerEnd} style={style} />
-      {label && (
-        <EdgeLabelRenderer>
-          <div
-            style={{
-              position: 'absolute',
-              transform: `translate(-50%, -50%) translate(${labelX}px,${labelY}px)`,
-              fontSize: 12,
-              pointerEvents: 'all'
-            }}
-            className="nodrag nopan"
-          >
-            <div
-              style={{
-                ...labelBgStyle,
-                padding: '4px 8px',
-                borderRadius: '6px',
-                border: `1px solid ${labelStyle?.fill || '#6b7280'}`,
-                whiteSpace: 'nowrap'
-              }}
-            >
-              <span style={labelStyle}>{label}</span>
-            </div>
-          </div>
-        </EdgeLabelRenderer>
-      )}
-    </>
-  );
-};
-
-const edgeTypes = {
-  smoothstep: CustomEdge as any
-};
-
 const nodeTypes = { knowledge: KnowledgeNode };
 
 // ============================================
@@ -524,29 +309,6 @@ const NodeEditorDialog = ({
   const [newConcept, setNewConcept] = useState('');
   const [newExample, setNewExample] = useState('');
   const [selectedCourseId, setSelectedCourseId] = useState<string>('');
-  const [isCustomCategory, setIsCustomCategory] = useState<boolean>(false);
-  const [customCategory, setCustomCategory] = useState<string>('');
-
-  // Check if current category is custom (not in predefined list)
-  useEffect(() => {
-    const predefinedCategories = [
-      'foundation',
-      'core',
-      'advanced',
-      'optional',
-      'intermediate',
-      'expert',
-      'beginner',
-      'specialized',
-      'practical',
-      'theoretical'
-    ];
-    const isCustom = !predefinedCategories.includes(formData.category);
-    setIsCustomCategory(isCustom);
-    if (isCustom) {
-      setCustomCategory(formData.category);
-    }
-  }, [formData.category]);
 
   const handleSave = async () => {
     onSave({
@@ -697,61 +459,21 @@ const NodeEditorDialog = ({
                 Phân loại *
               </label>
               <select
-                value={isCustomCategory ? 'custom' : formData.category}
-                onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === 'custom') {
-                    setIsCustomCategory(true);
-                    setCustomCategory(formData.category);
-                  } else {
-                    setIsCustomCategory(false);
-                    setFormData({
-                      ...formData,
-                      category: value
-                    });
-                  }
-                }}
+                value={formData.category}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    category: e.target.value as NodeData['category']
+                  })
+                }
                 className="w-full rounded-xl border-2 border-slate-200 px-4 py-3 outline-none transition-all focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
               >
                 <option value="foundation">🏗️ Nền tảng</option>
                 <option value="core">⭐ Cốt lõi</option>
                 <option value="advanced">🚀 Nâng cao</option>
                 <option value="optional">💡 Khuyên học</option>
-                <option value="intermediate">📊 Trung cấp</option>
-                <option value="expert">🎯 Chuyên sâu</option>
-                <option value="beginner">🌱 Người mới</option>
-                <option value="specialized">🔬 Chuyên ngành</option>
-                <option value="practical">🛠️ Thực hành</option>
-                <option value="theoretical">📚 Lý thuyết</option>
-                <option value="custom">✏️ Tùy chỉnh</option>
               </select>
             </div>
-
-            {isCustomCategory && (
-              <div>
-                <label className="mb-2 block text-sm font-semibold text-slate-700">
-                  Nhập Phân Loại Tùy Chỉnh *
-                </label>
-                <input
-                  type="text"
-                  value={customCategory}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    setCustomCategory(value);
-                    setFormData({
-                      ...formData,
-                      category: value
-                    });
-                  }}
-                  maxLength={50}
-                  placeholder="VD: Chuyên đề, Workshop, Seminar..."
-                  className="w-full rounded-xl border-2 border-slate-200 px-4 py-3 outline-none transition-all focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
-                />
-                <p className="mt-1 text-xs text-slate-500">
-                  {customCategory.length}/50 ký tự
-                </p>
-              </div>
-            )}
 
             <div>
               <label className="mb-2 block text-sm font-semibold text-slate-700">
@@ -1020,234 +742,6 @@ const NodeEditorDialog = ({
 };
 
 // ============================================
-// EDGE EDITOR DIALOG
-// ============================================
-
-const EdgeEditorDialog = ({
-  edge,
-  sourceNode,
-  targetNode,
-  allNodes,
-  onSave,
-  onDelete,
-  onClose,
-  isNew = false
-}: {
-  edge: Edge | null;
-  sourceNode: Node<NodeData> | null;
-  targetNode: Node<NodeData> | null;
-  allNodes: Node<NodeData>[];
-  onSave: (edge: Edge, relationshipType: string) => void;
-  onDelete?: (edgeId: string) => void;
-  onClose: () => void;
-  isNew?: boolean;
-}) => {
-  const [selectedType, setSelectedType] = useState<string>(
-    edge?.data?.relationshipType || 'required'
-  );
-  const [customType, setCustomType] = useState<string>('');
-  const [isCustom, setIsCustom] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (edge?.data?.relationshipType) {
-      const type = edge.data.relationshipType;
-      const isPredefined = RELATIONSHIP_TYPES.some((rt) => rt.value === type);
-      if (!isPredefined && type !== 'required' && type !== 'optional') {
-        setIsCustom(true);
-        setCustomType(type);
-        setSelectedType('custom');
-      } else {
-        setSelectedType(type);
-        setIsCustom(false);
-      }
-    }
-  }, [edge]);
-
-  const handleTypeChange = (value: string) => {
-    setSelectedType(value);
-    setIsCustom(value === 'custom');
-    if (value !== 'custom') {
-      setCustomType('');
-    }
-  };
-
-  const handleSave = () => {
-    if (!edge || !sourceNode || !targetNode) return;
-
-    const relationshipType = isCustom ? customType.trim() : selectedType;
-
-    if (isCustom && !customType.trim()) {
-      toast({
-        title: 'Lỗi',
-        description: 'Vui lòng nhập loại mối quan hệ tùy chỉnh',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    if (isCustom && customType.trim().length > 50) {
-      toast({
-        title: 'Lỗi',
-        description: 'Loại mối quan hệ không được vượt quá 50 ký tự',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    onSave(edge, relationshipType);
-    onClose();
-  };
-
-  if (!edge || !sourceNode || !targetNode) return null;
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-2xl rounded-3xl bg-white shadow-2xl">
-        {/* Header */}
-        <div className="rounded-t-3xl bg-gradient-to-r from-violet-600 via-indigo-600 to-sky-600 p-6 text-white">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="text-2xl font-bold">
-                {isNew ? 'Tạo Mối Quan Hệ Mới' : 'Chỉnh Sửa Mối Quan Hệ'}
-              </h2>
-              <p className="mt-1 text-violet-100">
-                Định nghĩa mối quan hệ giữa các node
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="rounded-xl p-2 transition-colors hover:bg-white/20"
-            >
-              <X className="h-6 w-6" />
-            </button>
-          </div>
-        </div>
-
-        {/* Form */}
-        <div className="space-y-6 p-6">
-          {/* Source and Target Nodes */}
-          <div className="grid grid-cols-2 gap-4">
-            <div className="rounded-xl border-2 border-slate-200 bg-slate-50 p-4">
-              <label className="mb-2 block text-sm font-semibold text-slate-600">
-                Từ Node
-              </label>
-              <div className="text-lg font-bold text-slate-800">
-                {sourceNode.data.label}
-              </div>
-            </div>
-            <div className="rounded-xl border-2 border-slate-200 bg-slate-50 p-4">
-              <label className="mb-2 block text-sm font-semibold text-slate-600">
-                Đến Node
-              </label>
-              <div className="text-lg font-bold text-slate-800">
-                {targetNode.data.label}
-              </div>
-            </div>
-          </div>
-
-          {/* Relationship Type */}
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-700">
-              Loại Mối Quan Hệ *
-            </label>
-            <select
-              value={selectedType}
-              onChange={(e) => handleTypeChange(e.target.value)}
-              className="w-full rounded-xl border-2 border-slate-200 px-4 py-3 outline-none transition-all focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
-            >
-              {RELATIONSHIP_TYPES.map((rt) => (
-                <option key={rt.value} value={rt.value}>
-                  {rt.label}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Custom Type Input */}
-          {isCustom && (
-            <div>
-              <label className="mb-2 block text-sm font-semibold text-slate-700">
-                Nhập Loại Mối Quan Hệ Tùy Chỉnh *
-              </label>
-              <input
-                type="text"
-                value={customType}
-                onChange={(e) => setCustomType(e.target.value)}
-                maxLength={50}
-                placeholder="VD: là tiền đề của, tương tự như..."
-                className="w-full rounded-xl border-2 border-slate-200 px-4 py-3 outline-none transition-all focus:border-violet-500 focus:ring-4 focus:ring-violet-100"
-              />
-              <p className="mt-1 text-xs text-slate-500">
-                {customType.length}/50 ký tự
-              </p>
-            </div>
-          )}
-
-          {/* Preview */}
-          <div className="rounded-xl border-2 border-violet-200 bg-violet-50 p-4">
-            <label className="mb-2 block text-sm font-semibold text-slate-700">
-              Xem Trước
-            </label>
-            <div className="flex items-center gap-3">
-              <span className="font-semibold text-slate-700">
-                {sourceNode.data.label}
-              </span>
-              <span
-                className="rounded-lg px-3 py-1 text-sm font-semibold text-white"
-                style={{
-                  backgroundColor: getRelationshipTypeColor(
-                    isCustom ? customType.trim() || 'required' : selectedType
-                  )
-                }}
-              >
-                {isCustom
-                  ? customType.trim() || 'Chưa nhập'
-                  : getRelationshipTypeLabel(selectedType)}
-              </span>
-              <span className="font-semibold text-slate-700">→</span>
-              <span className="font-semibold text-slate-700">
-                {targetNode.data.label}
-              </span>
-            </div>
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3 border-t border-slate-200 pt-4">
-            <button
-              onClick={handleSave}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3 font-semibold text-white transition-all hover:scale-[1.02] hover:shadow-lg"
-            >
-              <Save className="h-5 w-5" />
-              {isNew ? 'Tạo Mối Quan Hệ' : 'Lưu Thay Đổi'}
-            </button>
-            {!isNew && onDelete && (
-              <button
-                onClick={() => {
-                  if (confirm('Bạn có chắc muốn xóa mối quan hệ này?')) {
-                    onDelete(edge.id);
-                    onClose();
-                  }
-                }}
-                className="flex items-center gap-2 rounded-xl bg-rose-100 px-6 py-3 font-semibold text-rose-600 transition-colors hover:bg-rose-200"
-              >
-                <Trash2 className="h-5 w-5" />
-                Xóa
-              </button>
-            )}
-            <button
-              onClick={onClose}
-              className="rounded-xl bg-slate-100 px-6 py-3 font-semibold text-slate-700 transition-colors hover:bg-slate-200"
-            >
-              Hủy
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ============================================
 // VIEW DETAIL DIALOG (Read-only)
 // ============================================
 
@@ -1278,49 +772,21 @@ const KnowledgeDetailDialog = ({
   };
 
   const getCategoryBadge = () => {
-    const badges: Record<string, { color: string; label: string }> = {
+    const badges = {
       foundation: { color: 'bg-sky-100 text-sky-800', label: '🏗️ Nền tảng' },
       core: { color: 'bg-violet-100 text-violet-800', label: '⭐ Cốt lõi' },
       advanced: { color: 'bg-rose-100 text-rose-800', label: '🚀 Nâng cao' },
       optional: {
         color: 'bg-emerald-100 text-emerald-800',
         label: '💡 Khuyên học'
-      },
-      intermediate: {
-        color: 'bg-amber-100 text-amber-800',
-        label: '📊 Trung cấp'
-      },
-      expert: {
-        color: 'bg-purple-100 text-purple-800',
-        label: '🎯 Chuyên sâu'
-      },
-      beginner: { color: 'bg-green-100 text-green-800', label: '🌱 Người mới' },
-      specialized: {
-        color: 'bg-indigo-100 text-indigo-800',
-        label: '🔬 Chuyên ngành'
-      },
-      practical: {
-        color: 'bg-orange-100 text-orange-800',
-        label: '🛠️ Thực hành'
-      },
-      theoretical: { color: 'bg-cyan-100 text-cyan-800', label: '📚 Lý thuyết' }
+      }
     };
-
-    const badge = badges[node.data.category];
-    if (badge) {
-      return (
-        <span
-          className={`rounded-full px-3 py-1 text-sm font-semibold ${badge.color}`}
-        >
-          {badge.label}
-        </span>
-      );
-    }
-
-    // Custom category
+    const badge = badges[node.data.category] || badges.foundation;
     return (
-      <span className="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-800">
-        {node.data.category}
+      <span
+        className={`rounded-full px-3 py-1 text-sm font-semibold ${badge.color}`}
+      >
+        {badge.label}
       </span>
     );
   };
@@ -1484,238 +950,6 @@ const KnowledgeDetailDialog = ({
 };
 
 // ============================================
-// IMPORT DIALOG
-// ============================================
-
-const ImportDialog = ({
-  onImport,
-  onClose
-}: {
-  onImport: (file: File) => Promise<void>;
-  onClose: () => void;
-}) => {
-  const [file, setFile] = useState<File | null>(null);
-  const [isImporting, setIsImporting] = useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
-
-  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile && selectedFile.type === 'application/json') {
-      setFile(selectedFile);
-    } else {
-      toast({
-        title: 'Lỗi',
-        description: 'Vui lòng chọn file JSON',
-        variant: 'destructive'
-      });
-    }
-  };
-
-  const handleImport = async () => {
-    if (!file) {
-      toast({
-        title: 'Lỗi',
-        description: 'Vui lòng chọn file để import',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setIsImporting(true);
-    try {
-      await onImport(file);
-      setFile(null);
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-      onClose();
-    } catch (error) {
-      toast({
-        title: 'Lỗi',
-        description: 'Có lỗi xảy ra khi import file',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsImporting(false);
-    }
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="w-full max-w-2xl rounded-3xl bg-white shadow-2xl">
-        {/* Header */}
-        <div className="rounded-t-3xl bg-gradient-to-r from-emerald-600 to-teal-600 p-6 text-white">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="flex items-center gap-2 text-2xl font-bold">
-                <Upload className="h-6 w-6" />
-                Import Knowledge Graph
-              </h2>
-              <p className="mt-1 text-emerald-100">
-                Tải lên file JSON để import dữ liệu
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="rounded-xl p-2 transition-colors hover:bg-white/20"
-            >
-              <X className="h-6 w-6" />
-            </button>
-          </div>
-        </div>
-
-        {/* Form */}
-        <div className="space-y-6 p-6">
-          <div>
-            <label className="mb-2 block text-sm font-semibold text-slate-700">
-              Chọn file JSON *
-            </label>
-            <div className="flex items-center gap-3">
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".json,application/json"
-                onChange={handleFileSelect}
-                className="hidden"
-                id="import-file-input"
-              />
-              <label
-                htmlFor="import-file-input"
-                className="flex flex-1 cursor-pointer items-center gap-2 rounded-xl border-2 border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center transition-colors hover:border-emerald-500 hover:bg-emerald-50"
-              >
-                <Upload className="h-5 w-5 text-slate-400" />
-                <span className="text-sm text-slate-600">
-                  {file ? file.name : 'Click để chọn file JSON'}
-                </span>
-              </label>
-            </div>
-            {file && (
-              <p className="mt-2 text-xs text-slate-500">
-                File: {file.name} ({(file.size / 1024).toFixed(2)} KB)
-              </p>
-            )}
-          </div>
-
-          {/* Actions */}
-          <div className="flex gap-3 border-t border-slate-200 pt-4">
-            <button
-              onClick={handleImport}
-              disabled={!file || isImporting}
-              className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 py-3 font-semibold text-white transition-all hover:scale-[1.02] hover:shadow-lg disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:scale-100"
-            >
-              {isImporting ? (
-                <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Đang import...
-                </>
-              ) : (
-                <>
-                  <Upload className="h-5 w-5" />
-                  Import
-                </>
-              )}
-            </button>
-            <button
-              onClick={onClose}
-              className="rounded-xl bg-slate-100 px-6 py-3 font-semibold text-slate-700 transition-colors hover:bg-slate-200"
-            >
-              Hủy
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ============================================
-// FORMAT SAMPLE DIALOG
-// ============================================
-
-const FormatSampleDialog = ({
-  sampleData,
-  onClose
-}: {
-  sampleData: any;
-  onClose: () => void;
-}) => {
-  const [copied, setCopied] = useState(false);
-  const jsonString = JSON.stringify(sampleData, null, 2);
-
-  const copyToClipboard = () => {
-    navigator.clipboard.writeText(jsonString);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
-  };
-
-  const downloadSample = () => {
-    const blob = new Blob([jsonString], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'a-level-mathematics-sample.json';
-    a.click();
-    URL.revokeObjectURL(url);
-  };
-
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
-      <div className="flex max-h-[90vh] w-full max-w-4xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
-        {/* Header */}
-        <div className="bg-gradient-to-r from-violet-600 via-indigo-600 to-sky-600 p-6 text-white">
-          <div className="flex items-start justify-between">
-            <div>
-              <h2 className="flex items-center gap-2 text-2xl font-bold">
-                <FileText className="h-6 w-6" />
-                Format Import Mẫu
-              </h2>
-              <p className="mt-1 text-violet-100">
-                A Level Mathematics - Cấu trúc dữ liệu mẫu
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="rounded-xl p-2 transition-colors hover:bg-white/20"
-            >
-              <X className="h-6 w-6" />
-            </button>
-          </div>
-        </div>
-
-        {/* JSON Preview */}
-        <div className="flex-1 overflow-auto p-6">
-          <pre className="max-h-96 overflow-auto rounded-xl bg-slate-900 p-4 font-mono text-sm text-emerald-400">
-            {jsonString}
-          </pre>
-        </div>
-
-        {/* Actions */}
-        <div className="flex gap-3 border-t border-slate-200 p-6">
-          <button
-            onClick={copyToClipboard}
-            className={`flex flex-1 items-center justify-center gap-2 rounded-xl py-3 font-semibold transition-all ${
-              copied
-                ? 'bg-emerald-600 text-white'
-                : 'bg-slate-100 text-slate-700 hover:bg-slate-200'
-            }`}
-          >
-            <Copy className="h-5 w-5" />
-            {copied ? 'Đã copy!' : 'Copy JSON'}
-          </button>
-          <button
-            onClick={downloadSample}
-            className="flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3 font-semibold text-white transition-all hover:scale-[1.02] hover:shadow-lg"
-          >
-            <Download className="h-5 w-5" />
-            Tải về file mẫu
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-// ============================================
 // EXPORT DIALOG
 // ============================================
 
@@ -1742,9 +976,7 @@ const ExportDialog = ({
       id: e.id,
       source: e.source,
       target: e.target,
-      type:
-        e.data?.relationshipType ||
-        (e.style?.strokeDasharray ? 'optional' : 'required')
+      type: e.style?.strokeDasharray ? 'optional' : 'required'
     }))
   };
 
@@ -1885,13 +1117,8 @@ const KnowledgeGraphEditor = () => {
   const [mode, setMode] = useState<EditorMode>('edit');
   const [selectedNode, setSelectedNode] = useState<Node<NodeData> | null>(null);
   const [editingNode, setEditingNode] = useState<Node<NodeData> | null>(null);
-  const [editingEdge, setEditingEdge] = useState<Edge | null>(null);
-  const [, setPendingConnection] = useState<Connection | null>(null);
   const [isCreatingNode, setIsCreatingNode] = useState(false);
-  const [isCreatingEdge, setIsCreatingEdge] = useState(false);
   const [showExport, setShowExport] = useState(false);
-  const [showImportDialog, setShowImportDialog] = useState(false);
-  const [showFormatDialog, setShowFormatDialog] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   const { subjectId } = useParams();
@@ -1919,13 +1146,13 @@ const KnowledgeGraphEditor = () => {
   const [nodes, setNodes, onNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(initialEdges);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (initialNodes.length > 0) {
       setNodes(initialNodes);
     }
   }, [initialNodes, setNodes]);
 
-  useEffect(() => {
+  React.useEffect(() => {
     if (initialEdges.length > 0) {
       setEdges(initialEdges);
     }
@@ -1944,99 +1171,24 @@ const KnowledgeGraphEditor = () => {
 
   const onConnect: OnConnect = useCallback(
     (params: Connection) => {
-      if (mode === 'edit' && params.source && params.target) {
-        // Store the connection and open edge editor dialog
-        setPendingConnection(params);
-        const sourceNode = nodes.find((n) => n.id === params.source);
-        const targetNode = nodes.find((n) => n.id === params.target);
-
-        if (sourceNode && targetNode) {
-          const newEdge: Edge = {
-            ...params,
-            id: `e-${params.source}-${params.target}`,
-            type: 'smoothstep',
-            data: { relationshipType: 'required' }
-          } as Edge;
-          setEditingEdge(newEdge);
-          setIsCreatingEdge(true);
-        }
-      }
-    },
-    [mode, nodes]
-  );
-
-  const onEdgeClick = useCallback(
-    (_: React.MouseEvent, edge: Edge) => {
       if (mode === 'edit') {
-        setEditingEdge(edge);
-        setIsCreatingEdge(false);
+        const newEdge: Edge = {
+          ...params,
+          id: `e-${params.source}-${params.target}`,
+          type: 'smoothstep',
+          animated: true,
+          style: { stroke: '#3b82f6', strokeWidth: 3 },
+          markerEnd: {
+            type: MarkerType.ArrowClosed,
+            color: '#3b82f6',
+            width: 20,
+            height: 20
+          }
+        } as Edge;
+        setEdges((eds) => addEdge(newEdge, eds));
       }
     },
-    [mode]
-  );
-
-  const handleSaveEdge = useCallback(
-    (edge: Edge, relationshipType: string) => {
-      const sourceNode = nodes.find((n) => n.id === edge.source);
-      const targetNode = nodes.find((n) => n.id === edge.target);
-
-      if (!sourceNode || !targetNode) return;
-
-      const style = getRelationshipTypeStyle(relationshipType);
-      const color = getRelationshipTypeColor(relationshipType);
-      const label = getRelationshipTypeLabel(relationshipType);
-
-      const updatedEdge: Edge = {
-        ...edge,
-        type: 'smoothstep',
-        animated: relationshipType !== 'optional',
-        style: style,
-        label: label,
-        labelStyle: {
-          fill: color,
-          fontWeight: 600,
-          fontSize: 12
-        },
-        labelBgStyle: {
-          fill: '#ffffff',
-          fillOpacity: 0.8,
-          stroke: color,
-          strokeWidth: 1
-        },
-        markerEnd: {
-          type: MarkerType.ArrowClosed,
-          color: color,
-          width: 20,
-          height: 20
-        },
-        data: {
-          relationshipType: relationshipType
-        }
-      };
-
-      if (isCreatingEdge) {
-        setEdges((eds) => {
-          // Allow multiple edges between same nodes with different relationship types
-          // Generate unique ID to allow multiple edges
-          const edgeId = `e-${edge.source}-${edge.target}-${Date.now()}`;
-          return [...eds, { ...updatedEdge, id: edgeId }];
-        });
-      } else {
-        setEdges((eds) => eds.map((e) => (e.id === edge.id ? updatedEdge : e)));
-      }
-
-      setEditingEdge(null);
-      setPendingConnection(null);
-      setIsCreatingEdge(false);
-    },
-    [nodes, isCreatingEdge, setEdges]
-  );
-
-  const handleDeleteEdge = useCallback(
-    (edgeId: string) => {
-      setEdges((eds) => eds.filter((e) => e.id !== edgeId));
-    },
-    [setEdges]
+    [mode, setEdges]
   );
 
   const handleSaveNode = (updatedNode: Node<NodeData>) => {
@@ -2071,38 +1223,20 @@ const KnowledgeGraphEditor = () => {
             prereqNode?.data.category === 'optional' ||
             updatedNode.data.category === 'optional';
 
-          const relationshipType = isOptional ? 'optional' : 'required';
-          const style = getRelationshipTypeStyle(relationshipType);
-          const color = getRelationshipTypeColor(relationshipType);
-          const label = getRelationshipTypeLabel(relationshipType);
-
           return {
             id: `e-${prereqId}-${updatedNode.id}`,
             source: prereqId,
             target: updatedNode.id,
             type: 'smoothstep',
             animated: !isOptional,
-            style: style,
-            label: label,
-            labelStyle: {
-              fill: color,
-              fontWeight: 600,
-              fontSize: 12
-            },
-            labelBgStyle: {
-              fill: '#ffffff',
-              fillOpacity: 0.8,
-              stroke: color,
-              strokeWidth: 1
-            },
+            style: isOptional
+              ? { stroke: '#10b981', strokeWidth: 2, strokeDasharray: '5,5' }
+              : { stroke: '#3b82f6', strokeWidth: 3 },
             markerEnd: {
               type: MarkerType.ArrowClosed,
-              color: color,
+              color: isOptional ? '#10b981' : '#3b82f6',
               width: 20,
               height: 20
-            },
-            data: {
-              relationshipType: relationshipType
             }
           } as Edge;
         }
@@ -2118,7 +1252,7 @@ const KnowledgeGraphEditor = () => {
   };
 
   // Reference to store the latest updated node for saving
-  const pendingNodeRef = useRef<Node<NodeData> | null>(null);
+  const pendingNodeRef = React.useRef<Node<NodeData> | null>(null);
 
   const handleSaveNodeAndServer = async (updatedNode: Node<NodeData>) => {
     pendingNodeRef.current = updatedNode;
@@ -2148,10 +1282,6 @@ const KnowledgeGraphEditor = () => {
         const isOptional =
           prereqNode?.data.category === 'optional' ||
           updatedNode.data.category === 'optional';
-        const relationshipType = isOptional ? 'optional' : 'required';
-        const style = getRelationshipTypeStyle(relationshipType);
-        const color = getRelationshipTypeColor(relationshipType);
-        const label = getRelationshipTypeLabel(relationshipType);
 
         return {
           id: `e-${prereqId}-${updatedNode.id}`,
@@ -2159,27 +1289,14 @@ const KnowledgeGraphEditor = () => {
           target: updatedNode.id,
           type: 'smoothstep',
           animated: !isOptional,
-          style: style,
-          label: label,
-          labelStyle: {
-            fill: color,
-            fontWeight: 600,
-            fontSize: 12
-          },
-          labelBgStyle: {
-            fill: '#ffffff',
-            fillOpacity: 0.8,
-            stroke: color,
-            strokeWidth: 1
-          },
+          style: isOptional
+            ? { stroke: '#10b981', strokeWidth: 2, strokeDasharray: '5,5' }
+            : { stroke: '#3b82f6', strokeWidth: 3 },
           markerEnd: {
             type: MarkerType.ArrowClosed,
-            color: color,
+            color: isOptional ? '#10b981' : '#3b82f6',
             width: 20,
             height: 20
-          },
-          data: {
-            relationshipType: relationshipType
           }
         } as Edge;
       }
@@ -2258,8 +1375,7 @@ const KnowledgeGraphEditor = () => {
   };
 
   const { mutateAsync: importKnowledge } = useImportKnowledgeGraph();
-
-  const handleSave = async () => {
+  const handleImport = async () => {
     const payload = {
       subjectId: Number(subjectId),
       data: {
@@ -2274,7 +1390,7 @@ const KnowledgeGraphEditor = () => {
           id: edge.id,
           source: edge.source,
           target: edge.target,
-          type: edge.data?.relationshipType || edge.type || 'required'
+          type: edge.type
         }))
       }
     };
@@ -2292,125 +1408,6 @@ const KnowledgeGraphEditor = () => {
         variant: 'success'
       });
     }
-  };
-
-  const handleFileImport = async (file: File) => {
-    return new Promise<void>((resolve, reject) => {
-      const reader = new FileReader();
-      reader.onload = async (e) => {
-        try {
-          const jsonContent = e.target?.result as string;
-          const data = JSON.parse(jsonContent);
-
-          // Validate structure
-          if (!data.nodes || !Array.isArray(data.nodes)) {
-            throw new Error('File không hợp lệ: thiếu nodes');
-          }
-          if (!data.edges || !Array.isArray(data.edges)) {
-            throw new Error('File không hợp lệ: thiếu edges');
-          }
-
-          // Transform to ReactFlow format
-          const transformedNodes = data.nodes.map((node: any) => ({
-            id: node.id,
-            type: 'knowledge',
-            position: node.position || { x: 0, y: 0 },
-            data: {
-              label: node.data?.label || '',
-              category: node.data?.category || 'foundation',
-              description: node.data?.description || '',
-              concepts: node.data?.concepts || [],
-              examples: node.data?.examples || [],
-              prerequisites: node.data?.prerequisites || [],
-              estimatedTime: node.data?.estimatedTime || '1 tuần',
-              difficulty: node.data?.difficulty || 'Cơ bản',
-              status: node.data?.status || 'available',
-              resources: node.data?.resources || []
-            }
-          }));
-
-          const transformedEdges = data.edges.map((edge: any) => {
-            const relationshipType = edge.type || 'required';
-            const style = getRelationshipTypeStyle(relationshipType);
-            const color = getRelationshipTypeColor(relationshipType);
-            const label = getRelationshipTypeLabel(relationshipType);
-
-            return {
-              id: edge.id,
-              source: edge.source,
-              target: edge.target,
-              type: 'smoothstep',
-              animated: relationshipType !== 'optional',
-              style: style,
-              label: label,
-              labelStyle: {
-                fill: color,
-                fontWeight: 600,
-                fontSize: 12
-              },
-              labelBgStyle: {
-                fill: '#ffffff',
-                fillOpacity: 0.8,
-                stroke: color,
-                strokeWidth: 1
-              },
-              markerEnd: {
-                type: MarkerType.ArrowClosed,
-                color: color,
-                width: 20,
-                height: 20
-              },
-              data: {
-                relationshipType: relationshipType
-              }
-            };
-          });
-
-          setNodes(transformedNodes);
-          setEdges(transformedEdges);
-
-          // Save to server
-          const payload = {
-            subjectId: Number(subjectId),
-            data: {
-              version: data.version || '1.0.0',
-              exportedAt: data.exportedAt || new Date().toISOString(),
-              nodes: data.nodes,
-              edges: data.edges
-            }
-          };
-
-          const [err] = await importKnowledge(payload);
-          if (err) {
-            throw new Error(err.message || 'Có lỗi xảy ra khi import');
-          }
-
-          toast({
-            title: 'Thành công',
-            description: `Đã import ${transformedNodes.length} nodes và ${transformedEdges.length} edges`,
-            variant: 'success'
-          });
-
-          resolve();
-        } catch (error: any) {
-          toast({
-            title: 'Lỗi',
-            description: error.message || 'Có lỗi xảy ra khi đọc file',
-            variant: 'destructive'
-          });
-          reject(error);
-        }
-      };
-      reader.onerror = () => {
-        toast({
-          title: 'Lỗi',
-          description: 'Không thể đọc file',
-          variant: 'destructive'
-        });
-        reject(new Error('File read error'));
-      };
-      reader.readAsText(file);
-    });
   };
 
   // Loading state
@@ -2453,23 +1450,7 @@ const KnowledgeGraphEditor = () => {
               )}
 
               <button
-                onClick={() => setShowFormatDialog(true)}
-                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-amber-600 to-orange-600 px-4 py-2 text-sm font-medium text-white transition-all hover:scale-105 hover:shadow-lg"
-              >
-                <FileText className="h-4 w-4" />
-                Xem Format Mẫu
-              </button>
-
-              <button
-                onClick={() => setShowImportDialog(true)}
-                className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-blue-600 to-cyan-600 px-4 py-2 text-sm font-medium text-white transition-all hover:scale-105 hover:shadow-lg"
-              >
-                <Upload className="h-4 w-4" />
-                Import
-              </button>
-
-              <button
-                onClick={() => handleSave()}
+                onClick={() => handleImport()}
                 className="flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-4 py-2 text-sm font-medium text-white transition-all hover:scale-105 hover:shadow-lg"
               >
                 <Save className="h-4 w-4" />
@@ -2500,10 +1481,8 @@ const KnowledgeGraphEditor = () => {
             onNodesChange={onNodesChange}
             onEdgesChange={onEdgesChange}
             onNodeClick={onNodeClick}
-            onEdgeClick={onEdgeClick}
             onConnect={onConnect}
             nodeTypes={nodeTypes}
-            edgeTypes={edgeTypes}
             connectionLineType={ConnectionLineType.SmoothStep}
             fitView
             minZoom={0.2}
@@ -2524,17 +1503,11 @@ const KnowledgeGraphEditor = () => {
               className="rounded-xl border-2 border-violet-200 bg-white/90 shadow-xl backdrop-blur-sm"
               nodeColor={(node) => {
                 const data = node.data as NodeData;
-                const colors: Record<string, string> = {
+                const colors = {
                   foundation: '#3b82f6',
                   core: '#8b5cf6',
                   advanced: '#ef4444',
-                  optional: '#10b981',
-                  intermediate: '#f59e0b',
-                  expert: '#a855f7',
-                  beginner: '#22c55e',
-                  specialized: '#6366f1',
-                  practical: '#f97316',
-                  theoretical: '#06b6d4'
+                  optional: '#10b981'
                 };
                 return colors[data.category] || '#6b7280';
               }}
@@ -2568,34 +1541,6 @@ const KnowledgeGraphEditor = () => {
             <div className="flex items-center gap-2">
               <div className="h-4 w-4 rounded-md bg-gradient-to-br from-emerald-400 to-emerald-600" />
               <span>Khuyên học</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-md bg-gradient-to-br from-amber-400 to-amber-600" />
-              <span>Trung cấp</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-md bg-gradient-to-br from-purple-400 to-purple-600" />
-              <span>Chuyên sâu</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-md bg-gradient-to-br from-green-400 to-green-600" />
-              <span>Người mới</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-md bg-gradient-to-br from-indigo-400 to-indigo-600" />
-              <span>Chuyên ngành</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-md bg-gradient-to-br from-orange-400 to-orange-600" />
-              <span>Thực hành</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-md bg-gradient-to-br from-cyan-400 to-cyan-600" />
-              <span>Lý thuyết</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-md bg-gradient-to-br from-slate-400 to-slate-600" />
-              <span>Tùy chỉnh</span>
             </div>
           </div>
         </div>
@@ -2702,23 +1647,6 @@ const KnowledgeGraphEditor = () => {
         />
       )}
 
-      {editingEdge && (
-        <EdgeEditorDialog
-          edge={editingEdge}
-          sourceNode={nodes.find((n) => n.id === editingEdge.source) || null}
-          targetNode={nodes.find((n) => n.id === editingEdge.target) || null}
-          allNodes={nodes}
-          onSave={handleSaveEdge}
-          onDelete={handleDeleteEdge}
-          onClose={() => {
-            setEditingEdge(null);
-            setPendingConnection(null);
-            setIsCreatingEdge(false);
-          }}
-          isNew={isCreatingEdge}
-        />
-      )}
-
       {showExport && (
         <ExportDialog
           nodes={nodes}
@@ -2726,32 +1654,8 @@ const KnowledgeGraphEditor = () => {
           onClose={() => setShowExport(false)}
         />
       )}
-
-      {showImportDialog && (
-        <ImportDialog
-          onImport={handleFileImport}
-          onClose={() => setShowImportDialog(false)}
-        />
-      )}
-
-      {showFormatDialog && (
-        <FormatSampleDialog
-          sampleData={getSampleData()}
-          onClose={() => setShowFormatDialog(false)}
-        />
-      )}
     </div>
   );
-};
-
-// ============================================
-// SAMPLE DATA GENERATOR
-// ============================================
-
-import { getCambridgeSampleData } from './cambridge-sample-data';
-
-const getSampleData = () => {
-  return getCambridgeSampleData();
 };
 
 export default KnowledgeGraphEditor;

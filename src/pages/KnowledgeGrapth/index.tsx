@@ -1,5 +1,5 @@
 // KnowledgeGraphPage.jsx
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import {
   ReactFlow,
   Background,
@@ -22,7 +22,7 @@ const passStat = (nodeData) => {
 };
 
 const edgeStyleFromMeta = (meta = {}) => {
-  const { dashed = false, weight = 0.7, color = '#5b7fb0' } = meta;
+  const { dashed = false, weight = 0.7, color = '#5b7fb0' } = meta as any;
   return {
     stroke: color,
     strokeWidth: Math.max(1.5, weight * 3),
@@ -34,15 +34,15 @@ const edgeStyleFromMeta = (meta = {}) => {
 
 // React Flow state -> JSON phẳng để lưu DB
 function serializeGraph(nodes, edges) {
-  const concepts = [];
-  const resources = [];
-  const questions = [];
-  const progress = [];
-  const positions = [];
+  const concepts = [] as any;
+  const resources = [] as any;
+  const questions = [] as any;
+  const progress = [] as any;
+  const positions = [] as any;
 
   for (const n of nodes) {
     const d = n.data || {};
-    const c = d.concept || { id: n.id, name: d.label || 'Concept' };
+    const c = d.concept || ({ id: n.id, name: d.label || 'Concept' } as any);
 
     concepts.push({
       id: c.id,
@@ -610,7 +610,7 @@ function KnowledgeGraphInner() {
 
   // Node drawer
   const [nodeOpen, setNodeOpen] = useState(false);
-  const [editingNodeId, setEditingNodeId] = useState(null);
+  const [editingNodeId, setEditingNodeId] = useState<string | null>(null);
   const currentNode = useMemo(
     () => nodes.find((n) => n.id === editingNodeId),
     [nodes, editingNodeId]
@@ -636,7 +636,7 @@ function KnowledgeGraphInner() {
             ...(n.data || {}),
             label: n.data?.concept?.name
               ? `${n.data.concept.name}${badge}`
-              : n.data?.label || 'Node'
+              : (n.data as any)?.label || 'Node'
           }
         };
       }),

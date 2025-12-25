@@ -44,111 +44,29 @@ import { useCreateUpdateEvent } from '@/queries/event.query';
 import { useGetUsersByPagingByRole } from '@/queries/user.query';
 import { toast } from '@/components/ui/use-toast';
 
-// Helper function to get current VN time (UTC+7)
-const getVNTime = () => {
-  const now = new Date();
-  const vnOffset = 7 * 60; // UTC+7 in minutes
-  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-  const vnTime = new Date(utc + vnOffset * 60000);
-  return vnTime;
-};
-
-// Helper function to convert date string to VN time for comparison
-const toVNTime = (dateString: string) => {
-  const date = new Date(dateString);
-  // If the date string doesn't include timezone, treat it as local time
-  // Then convert to VN timezone (UTC+7)
-  const vnOffset = 7 * 60; // UTC+7 in minutes
-  const utc = date.getTime() - date.getTimezoneOffset() * 60000;
-  const vnTime = new Date(utc + vnOffset * 60000);
-  return vnTime;
-};
-
-const formSchema = z
-  .object({
-    title: z.string().min(1, 'Tiêu đề là bắt buộc').max(200, 'Tiêu đề quá dài'),
-    description: z.string().min(10, 'Mô tả phải có ít nhất 10 ký tự'),
-    startDate: z
-      .string()
-      .min(1, 'Ngày bắt đầu là bắt buộc')
-      .refine((date) => {
-        const startDate = toVNTime(date);
-        const now = getVNTime();
-        now.setHours(0, 0, 0, 0); // Reset time to start of day for comparison
-        startDate.setHours(0, 0, 0, 0);
-        return startDate >= now;
-      }, 'Ngày bắt đầu phải từ hôm nay trở đi')
-      .refine((date) => {
-        const startDate = toVNTime(date);
-        const maxDate = getVNTime();
-        maxDate.setFullYear(maxDate.getFullYear() + 2); // Maximum 2 years in future
-        return startDate <= maxDate;
-      }, 'Ngày bắt đầu không được quá 2 năm trong tương lai'),
-    endDate: z
-      .string()
-      .min(1, 'Ngày kết thúc là bắt buộc')
-      .refine((date) => {
-        const endDate = toVNTime(date);
-        const now = getVNTime();
-        now.setHours(0, 0, 0, 0);
-        endDate.setHours(0, 0, 0, 0);
-        return endDate >= now;
-      }, 'Ngày kết thúc phải từ hôm nay trở đi'),
-    meetingLink: z
-      .string()
-      .url('Link họp không hợp lệ')
-      .optional()
-      .or(z.literal('')),
-    commissionRate: z
-      .number()
-      .min(0, 'Tỷ lệ hoa hồng phải >= 0')
-      .max(100, 'Tỷ lệ hoa hồng phải <= 100'),
-    amount: z.number().min(0, 'Số tiền phải >= 0'),
-    status: z.number(),
-    speakerId: z.number().min(1, 'Vui lòng chọn diễn giả'),
-    videoUrl: z
-      .string()
-      .url('Link video không hợp lệ')
-      .optional()
-      .or(z.literal(''))
-  })
-  .refine(
-    (data) => {
-      const startDate = new Date(data.startDate);
-      const endDate = new Date(data.endDate);
-      return endDate > startDate;
-    },
-    {
-      message: 'Ngày kết thúc phải sau ngày bắt đầu',
-      path: ['endDate']
-    }
-  )
-  .refine(
-    (data) => {
-      const startDate = new Date(data.startDate);
-      const endDate = new Date(data.endDate);
-      const diffInHours =
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
-      return diffInHours >= 1; // Minimum 1 hour duration
-    },
-    {
-      message: 'Sự kiện phải kéo dài ít nhất 1 giờ',
-      path: ['endDate']
-    }
-  )
-  .refine(
-    (data) => {
-      const startDate = new Date(data.startDate);
-      const endDate = new Date(data.endDate);
-      const diffInDays =
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-      return diffInDays <= 30; // Maximum 30 days duration
-    },
-    {
-      message: 'Sự kiện không được kéo dài quá 30 ngày',
-      path: ['endDate']
-    }
-  );
+const formSchema = z.object({
+  title: z.string().min(1, 'Tiêu đề là bắt buộc').max(200, 'Tiêu đề quá dài'),
+  description: z.string().min(10, 'Mô tả phải có ít nhất 10 ký tự'),
+  startDate: z.string().min(1, 'Ngày bắt đầu là bắt buộc'),
+  endDate: z.string().min(1, 'Ngày kết thúc là bắt buộc'),
+  meetingLink: z
+    .string()
+    .url('Link họp không hợp lệ')
+    .optional()
+    .or(z.literal('')),
+  commissionRate: z
+    .number()
+    .min(0, 'Tỷ lệ hoa hồng phải >= 0')
+    .max(100, 'Tỷ lệ hoa hồng phải <= 100'),
+  amount: z.number().min(0, 'Số tiền phải >= 0'),
+  status: z.number(),
+  speakerId: z.number().min(1, 'Vui lòng chọn diễn giả'),
+  videoUrl: z
+    .string()
+    .url('Link video không hợp lệ')
+    .optional()
+    .or(z.literal(''))
+});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -163,7 +81,6 @@ const getYouTubeVideoId = (url: string): string | null => {
 export default function CreateEventForm() {
   const [imageUrl, setImageUrl] = useState<string | null>(null);
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
-  const [startDateValue, setStartDateValue] = useState<string>('');
 
   const { mutateAsync: createUpdateEvent, isPending } = useCreateUpdateEvent();
   const { data: speakersData } = useGetUsersByPagingByRole(
@@ -310,9 +227,7 @@ export default function CreateEventForm() {
                     </FormLabel>
                     <Select
                       onValueChange={(value) => field.onChange(parseInt(value))}
-                      value={
-                        field.value > 0 ? field.value.toString() : undefined
-                      }
+                      value={field.value?.toString()}
                     >
                       <FormControl>
                         <SelectTrigger className="focus:border-orange-500 focus:ring-orange-500">
@@ -356,28 +271,6 @@ export default function CreateEventForm() {
               <CardDescription>Lịch trình diễn ra sự kiện</CardDescription>
             </CardHeader>
             <CardContent className="pt-6">
-              {/* Warning for events scheduled too soon */}
-              {startDateValue &&
-                (() => {
-                  const startDate = new Date(startDateValue);
-                  const now = new Date();
-                  const diffInHours =
-                    (startDate.getTime() - now.getTime()) / (1000 * 60 * 60);
-
-                  if (diffInHours < 24 && diffInHours > 0) {
-                    return (
-                      <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3">
-                        <p className="text-sm text-yellow-800">
-                          <strong>⚠️ Lưu ý:</strong> Sự kiện được lên lịch trong
-                          vòng 24 giờ tới. Hãy đảm bảo bạn đã chuẩn bị đầy đủ và
-                          thông báo cho người tham gia.
-                        </p>
-                      </div>
-                    );
-                  }
-                  return null;
-                })()}
-
               <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                 {/* Start Date */}
                 <FormField
@@ -393,17 +286,9 @@ export default function CreateEventForm() {
                         <Input
                           type="datetime-local"
                           {...field}
-                          onChange={(e) => {
-                            field.onChange(e);
-                            setStartDateValue(e.target.value);
-                          }}
                           className="focus:border-orange-500 focus:ring-orange-500"
-                          min={new Date().toISOString().slice(0, 16)}
                         />
                       </FormControl>
-                      <FormDescription className="text-gray-500">
-                        Chọn ngày và giờ bắt đầu sự kiện (từ hôm nay trở đi)
-                      </FormDescription>
                       <FormMessage className="text-orange-600" />
                     </FormItem>
                   )}
@@ -424,15 +309,8 @@ export default function CreateEventForm() {
                           type="datetime-local"
                           {...field}
                           className="focus:border-orange-500 focus:ring-orange-500"
-                          min={
-                            startDateValue ||
-                            new Date().toISOString().slice(0, 16)
-                          }
                         />
                       </FormControl>
-                      <FormDescription className="text-gray-500">
-                        Phải sau ngày bắt đầu và kéo dài ít nhất 1 giờ
-                      </FormDescription>
                       <FormMessage className="text-orange-600" />
                     </FormItem>
                   )}

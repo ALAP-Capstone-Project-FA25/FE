@@ -1,293 +1,392 @@
-import { Crown } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { BookOpen, Users, Star, Clock, ArrowRight } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { useGetCategoriesByPaging } from '@/queries/category.query';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useGetCategoriesByPagingByMajor } from '@/queries/category.query';
+import { motion } from 'framer-motion';
 import { useRouter } from '@/routes/hooks';
+import { useGetMyInfo } from '@/queries/user.query';
+import Joyride, { Step, CallBackProps, STATUS } from 'react-joyride';
 
-const cardVariants = {
-  hidden: { opacity: 0, y: 30, scale: 0.96 },
-  visible: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    transition: {
-      delay: i * 0.06,
-      duration: 0.5,
-      type: 'spring',
-      stiffness: 125,
-      damping: 18
-    }
-  })
-};
+const heroSlides = [
+  {
+    id: 1,
+    title: 'AP Computer Science A – Luyện thi chuẩn College Board',
+    description:
+      'Khoá học giúp học sinh nắm vững Java, OOP, thuật toán và dạng bài chính thức. Chuẩn bị tự tin cho kỳ thi AP với hệ thống bài tập bám sát đề thật.',
+    // oldPrice: '9.999K',
+    // newPrice: '6.499K',
+    note1: 'Tặng bộ đề AP CS A chính thống (2020–2024)',
+    note2: 'Kèm theo 20 buổi luyện giải cùng giáo viên',
+    gradient: 'from-purple-600 via-purple-700 to-purple-900',
+    accent: 'from-orange-400 to-orange-600',
+    buttonText: 'ĐĂNG KÝ HỌC THỬ'
+  },
 
-const sectionVariants = {
-  hidden: { opacity: 0, y: 40 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.6, type: 'spring' } }
-};
+  {
+    id: 2,
+    title: 'AP Calculus AB/BC – Nắm chắc kiến thức & tăng điểm nhanh ',
+    description:
+      'Giúp học sinh hiểu sâu về giới hạn, đạo hàm, tích phân và ứng dụng. Khóa luyện đề nâng cao đảm bảo kỹ năng giải nhanh và chính xác.',
+    // oldPrice: '12.499K',
+    // newPrice: '7.899K',
+    note1: 'Tặng bộ flashcard 500+ công thức AP Calculus',
+    note2: 'Cam kết hoàn phí nếu không tăng điểm',
+    gradient: 'from-blue-600 via-sky-600 to-indigo-700',
+    accent: 'from-emerald-400 to-teal-500',
+    buttonText: 'XEM CHI TIẾT LỘ TRÌNH'
+  },
 
-const fadeInUp = {
-  hidden: { opacity: 0, y: 24 },
-  visible: {
-    opacity: 1,
-    y: 0,
-    transition: { duration: 0.7, type: 'spring', damping: 19, stiffness: 120 }
+  {
+    id: 3,
+    title: 'AP Physics 1/2 – Tư duy vật lý và giải bài nâng cao ⚡',
+    description:
+      'Khóa học tập trung vào các chủ đề quan trọng: động lực học, điện từ học, sóng, năng lượng và bài tập FRQ. Lý thuyết ngắn gọn – bài tập theo cấp độ.',
+    // oldPrice: '11.999K',
+    // newPrice: '7.499K',
+    note1: 'Tặng bộ ngân hàng 300+ FRQ & MCQ chuẩn AP',
+    note2: 'Giáo viên 8.0+ A-Level & AP Master hướng dẫn',
+    gradient: 'from-rose-500 via-pink-600 to-fuchsia-700',
+    accent: 'from-yellow-400 to-orange-500',
+    buttonText: 'THAM GIA NGAY'
   }
-};
+];
 
 export default function F8LearningPlatform() {
-  const { data: categoriesData } = useGetCategoriesByPaging(1, 10, '');
+  const { data: infoUser } = useGetMyInfo();
+  const majorId = infoUser?.majorId;
+  const { data: categoriesData, refetch } = useGetCategoriesByPagingByMajor(
+    1,
+    50,
+    '',
+    majorId
+  );
   const categories = categoriesData?.listObjects || [];
 
-  // Helper function to format price
-  const formatPrice = (price: number) => {
-    return new Intl.NumberFormat('vi-VN', {
-      style: 'currency',
-      currency: 'VND'
-    }).format(price);
-  };
+  useEffect(() => {
+    if (majorId != null) {
+      refetch();
+    }
+  }, [majorId]);
 
-  // Helper function to get gradient based on category
-  const getGradient = (categoryId: number) => {
-    const gradients = [
-      'from-blue-500 to-purple-600',
-      'from-yellow-400 to-orange-500',
-      'from-pink-500 to-pink-400',
-      'from-green-500 to-teal-600',
-      'from-red-500 to-pink-600',
-      'from-indigo-500 to-blue-600'
-    ];
-    return gradients[categoryId % gradients.length];
-  };
+  // Đã xóa formatPrice vì không còn hiển thị giá
 
   const router = useRouter();
+
+  // Tour guide state
+  const [runTour, setRunTour] = useState(false);
+
+  // Tour steps cho HomePage - chỉ giữ step 2 và 3
+  const homePageSteps: Step[] = [
+    {
+      target: '.categories-section',
+      content: 'Đây là nơi hiển thị tất cả các danh mục khóa học theo chuyên ngành của bạn.',
+      title: 'Danh mục khóa học',
+      placement: 'top',
+      disableBeacon: true,
+    },
+    {
+      target: '.course-card:first-child',
+      content: 'Mỗi thẻ khóa học hiển thị thông tin cơ bản và nút "Xem ngay" để xem chi tiết.',
+      title: 'Thẻ khóa học',
+      placement: 'top',
+    },
+  ];
+
+  // Handle tour callback
+  const handleJoyrideCallback = (data: CallBackProps) => {
+    const { status } = data;
+    const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
+
+    if (finishedStatuses.includes(status)) {
+      setRunTour(false);
+      localStorage.setItem('homepage-tour-seen', 'true');
+    }
+  };
+
+  // Tự động bắt đầu tour khi component mount và có dữ liệu (chỉ 1 lần)
+  useEffect(() => {
+    if (categories.length > 0) {
+      const hasSeenTour = localStorage.getItem('homepage-tour-seen');
+      if (!hasSeenTour) {
+        setTimeout(() => {
+          setRunTour(true);
+        }, 1000); // Delay 1s để UI render xong
+      }
+    }
+  }, [categories.length]);
+
+  const [currentSlide, setCurrentSlide] = useState(0);
+  const [direction, setDirection] = useState<1 | -1>(1);
+
+  // Auto chạy qua lại giữa các slide (ping-pong)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => {
+        if (prev === heroSlides.length - 1) {
+          setDirection(-1);
+          return prev - 1;
+        }
+        if (prev === 0) {
+          setDirection(1);
+          return prev + 1;
+        }
+        return prev + direction;
+      });
+    }, 5000);
+
+    return () => clearInterval(interval);
+  }, [direction]);
+
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Main Content */}
-      <main className="ml-20 p-8">
-        {/* Hero Banner */}
-        <motion.div
-          className="relative mb-12 overflow-hidden rounded-2xl bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 p-12"
-          initial="hidden"
-          animate="visible"
-        >
-          <div className="relative z-10">
-            <motion.h1
-              initial="hidden"
-              animate="visible"
-              className="mb-4 flex items-center gap-2 text-4xl font-bold text-white"
-            >
-              Mở bán khóa ôn luyện AP
-              <Crown className="h-8 w-8 text-yellow-300" />
-            </motion.h1>
-            <motion.p
-              initial="hidden"
-              animate="visible"
-              transition={{ delay: 0.2 }}
-              className="mb-8 text-lg text-white/90"
-            >
-              AP Learning là nền tảng học lập trình và phát triển kỹ năng số
-              dành cho tất cả mọi người. Với các khóa học đa dạng, bài giảng
-              chất lượng và cộng đồng hỗ trợ nhiệt tình, bạn có thể bắt đầu con
-              đường chinh phục công nghệ bất cứ khi nào!
-            </motion.p>
+    <>
+      {/* Tour Guide */}
+      <Joyride
+        steps={homePageSteps}
+        run={runTour}
+        continuous
+        showProgress
+        showSkipButton
+        callback={handleJoyrideCallback}
+        styles={{
+          options: {
+            primaryColor: '#f97316', // orange-500
+            zIndex: 10000
+          },
+          tooltip: {
+            borderRadius: 12,
+            padding: 20
+          },
+          buttonNext: {
+            backgroundColor: '#f97316',
+            borderRadius: 8,
+            padding: '8px 16px'
+          },
+          buttonSkip: {
+            color: '#6b7280'
+          }
+        }}
+        locale={{
+          back: 'Quay lại',
+          close: 'Đóng',
+          last: 'Hoàn thành',
+          next: 'Tiếp theo',
+          skip: 'Bỏ qua'
+        }}
+      />
+
+      <div className="min-h-screen bg-gray-200/50">
+        <main className="mx-auto w-[95%]">
+        {/* HERO SECTION - AUTO TRANSLATE SLIDER */}
+        <div className="hero-section relative mb-12 overflow-hidden rounded-3xl">
+          <div className="relative w-full overflow-hidden">
             <motion.div
-              initial="hidden"
-              animate="visible"
-              transition={{ delay: 0.4 }}
+              animate={{ x: `-${currentSlide * 100}%` }}
+              transition={{ duration: 0.8, ease: 'easeInOut' }}
+              className="flex w-full"
             >
-              <Button className="rounded-full bg-white px-8 py-6 text-base font-semibold text-purple-600 hover:bg-gray-100">
-                HỌC THỬ MIỄN PHÍ
-              </Button>
+              {/* Slide 1 */}
+              <div className="flex w-full flex-shrink-0 items-center bg-gradient-to-br from-purple-600 via-purple-700 to-purple-900 p-12 text-white">
+                <div>
+                  <h1 className="mb-4 text-4xl font-bold md:text-5xl">
+                    {heroSlides[currentSlide].title}
+                  </h1>
+                  <p className="mb-6 text-lg text-purple-100">
+                    {heroSlides[currentSlide].description}
+                  </p>
+                  <Button className="bg-white px-8 py-6 font-semibold text-purple-700 hover:bg-purple-50">
+                    {heroSlides[currentSlide].buttonText}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Slide 2 */}
+              <div className="flex w-full flex-shrink-0 items-center bg-gradient-to-br from-blue-600 via-sky-600 to-indigo-700 p-12 text-white">
+                <div>
+                  <h1 className="mb-4 text-4xl font-bold md:text-5xl">
+                    {heroSlides[currentSlide].title}
+                  </h1>
+                  <p className="mb-6 text-lg text-blue-100">
+                    {heroSlides[currentSlide].description}
+                  </p>
+                  <Button className="bg-white px-8 py-6 font-semibold text-blue-700 hover:bg-blue-50">
+                    {heroSlides[currentSlide].buttonText}
+                  </Button>
+                </div>
+              </div>
+
+              {/* Slide 3 */}
+              <div className="flex w-full flex-shrink-0 items-center bg-gradient-to-br from-rose-500 via-pink-600 to-fuchsia-700 p-12 text-white">
+                <div>
+                  <h1 className="mb-4 text-4xl font-bold md:text-5xl">
+                    {heroSlides[currentSlide].title}
+                  </h1>
+                  <p className="mb-6 text-lg text-pink-100">
+                    {heroSlides[currentSlide].description}
+                  </p>
+                  <Button className="bg-white px-8 py-6 font-semibold text-pink-700 hover:bg-pink-50">
+                    {heroSlides[currentSlide].buttonText}
+                  </Button>
+                </div>
+              </div>
             </motion.div>
           </div>
-        </motion.div>
+        </div>
 
-        {/* Categories and Courses Section */}
-        <motion.div className="mb-8" initial="hidden" animate="visible">
-          <div className="mb-8 flex items-center gap-3">
-            <h2 className="text-3xl font-bold text-gray-800">
-              Khóa học theo danh mục
-            </h2>
-            <Badge className="bg-blue-500 text-white hover:bg-blue-600">
-              MỚI
-            </Badge>
-          </div>
+        {/* Categories Section */}
+        <div className="categories-section px-8">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 0.4 }}
+          >
+            <div className="mb-8">
+              <h2 className="mb-2 flex items-center text-3xl font-bold text-gray-900">
+                Khám phá khóa học{' '}
+                <Badge className="ml-2 bg-orange-500 text-white">MỚI</Badge>
+              </h2>
+              <p className="text-gray-600">
+                Chọn danh mục phù hợp với mục tiêu của bạn
+              </p>
+            </div>
 
-          <AnimatePresence>
-            {categories.map((category: any, catIdx: number) => (
-              <motion.div
-                key={category.id}
-                className="mb-12"
-                initial="hidden"
-                whileInView="visible"
-                viewport={{ once: true, amount: 0.2 }}
-                variants={{
-                  hidden: { opacity: 0, y: 30 },
-                  visible: {
-                    opacity: 1,
-                    y: 0,
-                    transition: {
-                      delay: catIdx * 0.09,
-                      duration: 0.5,
-                      type: 'spring',
-                      damping: 20
-                    }
-                  }
-                }}
-              >
-                <div className="mb-6 flex items-center gap-3">
-                  <h3 className="text-2xl font-bold text-gray-800">
-                    {category.name}
-                  </h3>
-                  <Badge variant="outline" className="text-gray-600">
-                    {category.courses?.length || 0} khóa học
-                  </Badge>
-                </div>
+            <div className="space-y-8">
+              {categories.map((category: any, catIdx: number) => (
+                <motion.div
+                  key={category.id}
+                  initial={{ opacity: 0, y: 30 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, amount: 0.1 }}
+                  transition={{ delay: catIdx * 0.1, duration: 0.5 }}
+                >
+                  {/* Category Header */}
+                  <div className="mb-6 flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-orange-100 text-2xl">
+                        📖
+                      </div>
+                      <div>
+                        <h3 className="text-xl font-bold text-gray-900">
+                          {category.name}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          {category.courses?.length || 0} khóa học
+                        </p>
+                      </div>
+                    </div>
 
-                {category.courses && category.courses.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <div
-                      className="flex gap-6 pb-4"
-                      style={{ width: 'max-content' }}
-                    >
-                      <AnimatePresence initial={false}>
-                        {category.courses.map((course: any, i: number) => (
+                    {category.courses?.length > 0 && (
+                      <Button
+                        variant="ghost"
+                        className="text-orange-500 hover:bg-orange-50 hover:text-orange-600"
+                      >
+                        Xem tất cả
+                        <ArrowRight className="ml-2 h-4 w-4" />
+                      </Button>
+                    )}
+                  </div>
+
+                  {/* Courses Grid */}
+                  {category.courses && category.courses.length > 0 ? (
+                    <div className="scrollbar-hide overflow-x-auto pb-4">
+                      <div
+                        className="flex gap-6"
+                        style={{ width: 'max-content' }}
+                      >
+                        {category.courses.map((course: any) => (
                           <motion.div
                             key={course.id}
-                            custom={i}
-                            initial="hidden"
-                            animate="visible"
-                            exit={{ opacity: 0, scale: 0.94, y: 18 }}
-                            whileHover={{
-                              y: -6,
-                              scale: 1.014
-                            }}
-                            style={{ display: 'flex' }}
+                            whileHover={{ y: -4 }}
+                            transition={{ duration: 0.2 }}
                             onClick={() => router.push(`/course/${course.id}`)}
                           >
-                            <Card className="w-80 flex-shrink-0 cursor-pointer overflow-hidden transition-all duration-300">
-                              <div
-                                className={`h-60 bg-gradient-to-br ${getGradient(course.categoryId)} relative flex flex-col items-center justify-center p-8`}
-                              >
+                            <Card className="course-card group w-80 cursor-pointer overflow-hidden border-gray-200 bg-white transition-all hover:border-orange-500/50 hover:shadow-lg hover:shadow-orange-500/10">
+                              {/* Course Image */}
+                              <div className="relative h-44 overflow-hidden bg-gray-100">
                                 {course.imageUrl ? (
-                                  <motion.img
+                                  <img
                                     src={course.imageUrl}
                                     alt={course.title}
-                                    className="absolute inset-0 h-full w-full object-cover"
-                                    initial={{ opacity: 0, scale: 1.07 }}
-                                    animate={{ opacity: 1, scale: 1 }}
-                                    transition={{
-                                      duration: 0.75,
-                                      delay: 0.1 + i * 0.03
-                                    }}
+                                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                                   />
                                 ) : (
-                                  <>
-                                    <motion.div
-                                      className="absolute left-4 top-4 rounded-lg bg-white/30 px-3 py-2 text-2xl backdrop-blur-sm"
-                                      initial={{ opacity: 0, scale: 0.85 }}
-                                      animate={{ opacity: 1, scale: 1 }}
-                                      transition={{ duration: 0.34 }}
-                                    >
-                                      👑
-                                    </motion.div>
-                                    <motion.h3
-                                      className="mb-2 text-center text-3xl font-bold text-white drop-shadow-lg"
-                                      initial={{ opacity: 0, scale: 1.06 }}
-                                      animate={{ opacity: 1, scale: 1 }}
-                                      transition={{
-                                        delay: 0.08,
-                                        duration: 0.45
-                                      }}
-                                    >
-                                      {course.title}
-                                    </motion.h3>
-                                  </>
+                                  <div className="flex h-full items-center justify-center">
+                                    <span className="text-6xl">🎓</span>
+                                  </div>
                                 )}
+
+                                {/* Rating Badge */}
+                                <div className="course-rating absolute right-3 top-3 flex items-center gap-1 rounded-lg bg-white/90 px-2.5 py-1.5 backdrop-blur-sm">
+                                  <Star className="h-4 w-4 fill-yellow-500 text-yellow-500" />
+                                  <span className="text-sm font-semibold text-gray-900">
+                                    4.8
+                                  </span>
+                                </div>
                               </div>
-                              <CardContent className="p-6">
-                                <h4
-                                  className="mb-2 overflow-hidden text-lg font-semibold text-gray-800"
-                                  style={{
-                                    display: '-webkit-box',
-                                    WebkitLineClamp: 2,
-                                    WebkitBoxOrient: 'vertical'
-                                  }}
-                                >
+
+                              <CardContent className="p-5">
+                                {/* Course Title */}
+                                <h4 className="mb-2 line-clamp-2 text-lg font-semibold text-gray-900">
                                   {course.title}
                                 </h4>
-                                <p
-                                  className="mb-4 overflow-hidden text-sm text-gray-600"
-                                  style={{
-                                    display: '-webkit-box',
-                                    WebkitLineClamp: 2,
-                                    WebkitBoxOrient: 'vertical'
-                                  }}
-                                >
+
+                                {/* Course Description */}
+                                <p className="mb-4 line-clamp-2 text-sm text-gray-600">
                                   {course.description}
                                 </p>
 
-                                <div className="mb-4 flex items-center gap-3">
-                                  {course.salePrice &&
-                                  course.salePrice < course.price ? (
-                                    <>
-                                      <span className="text-sm text-gray-400 line-through">
-                                        {formatPrice(course.price)}
-                                      </span>
-                                      <span className="text-xl font-bold text-orange-500">
-                                        {formatPrice(course.salePrice)}
-                                      </span>
-                                    </>
-                                  ) : (
-                                    <span className="text-xl font-bold text-orange-500">
-                                      {formatPrice(course.price)}
+                                {/* Course Meta */}
+                                <div className="course-meta mb-4 flex items-center gap-4 text-sm text-gray-600">
+                                  <div className="flex items-center gap-1.5">
+                                    <Users className="h-4 w-4" />
+                                    <span>{course.members || 0}</span>
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <BookOpen className="h-4 w-4" />
+                                    <span>
+                                      {course.topics?.length || 0} bài
                                     </span>
-                                  )}
+                                  </div>
+                                  <div className="flex items-center gap-1.5">
+                                    <Clock className="h-4 w-4" />
+                                    <span>12h</span>
+                                  </div>
                                 </div>
 
-                                <motion.div
-                                  className="flex items-center gap-4 border-t border-gray-100 pt-4 text-sm text-gray-600"
-                                  initial={{ opacity: 0, y: 8 }}
-                                  animate={{ opacity: 1, y: 0 }}
-                                  transition={{ delay: 0.13 }}
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <span>👤</span>
-                                    <span>{course.members || 0} học viên</span>
-                                  </div>
-                                  <div className="flex items-center gap-2">
-                                    <span>📚</span>
-                                    <span>
-                                      {course.topics?.length || 0} bài học
-                                    </span>
-                                  </div>
-                                </motion.div>
+                                {/* Nút Xem ngay */}
+                                <div className="border-t border-gray-200 pt-4">
+                                  <Button 
+                                    className="w-full bg-orange-500 text-white hover:bg-orange-600"
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      router.push(`/course/${course.id}`);
+                                    }}
+                                  >
+                                    Xem ngay
+                                  </Button>
+                                </div>
                               </CardContent>
                             </Card>
                           </motion.div>
                         ))}
-                      </AnimatePresence>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <motion.div
-                    className="rounded-lg border-2 border-dashed border-gray-300 p-8 text-center"
-                    initial={{ opacity: 0, y: 16 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: 0.05 }}
-                  >
-                    <p className="text-gray-500">
-                      Chưa có khóa học nào trong danh mục này
-                    </p>
-                  </motion.div>
-                )}
-              </motion.div>
-            ))}
-          </AnimatePresence>
-        </motion.div>
+                  ) : (
+                    <div className="rounded-xl border border-dashed border-gray-300 bg-gray-50 p-12 text-center">
+                      <div className="mb-3 text-5xl opacity-50">📭</div>
+                      <p className="text-gray-600">
+                        Chưa có khóa học nào trong danh mục này
+                      </p>
+                    </div>
+                  )}
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
       </main>
     </div>
+    </>
   );
 }

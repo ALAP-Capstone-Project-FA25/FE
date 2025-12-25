@@ -6,16 +6,6 @@ import CourseCard from './course-card';
 import { useGetProfile } from '@/queries/auth.query';
 import { useMemo } from 'react';
 
-interface UserCourse {
-  id: number;
-  courseId: number;
-  title: string;
-  description: string;
-  isActive: boolean;
-  isDone: boolean;
-  completedAt: string | null;
-}
-
 const gradients = [
   'from-red-500 to-purple-600',
   'from-purple-600 to-blue-600',

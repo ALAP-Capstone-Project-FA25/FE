@@ -50,7 +50,11 @@ export default function LessonPage() {
     data: lessonsData,
     isLoading,
     refetch
-  } = useGetLessonsByPaging(pagingModel);
+  } = useGetLessonsByPaging(
+    pagingModel.page,
+    pagingModel.pageSize,
+    pagingModel.keyword
+  );
   const { mutateAsync: createUpdateLesson, isPending: isCreating } =
     useCreateUpdateLesson();
   const { mutateAsync: deleteLesson, isPending: isDeleting } =

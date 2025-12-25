@@ -1,26 +1,7 @@
 'use client';
 
-import { Star, Users, Eye, Clock } from 'lucide-react';
 import { useRouter } from '@/routes/hooks';
-import { formatDate } from 'date-fns';
 import __helpers from '@/helpers';
-
-interface CourseStats {
-  learners: string;
-  rating: string;
-  views: string;
-  duration: string;
-}
-
-interface Course {
-  id: number;
-  title: string;
-  subtitle: string;
-  gradient: string;
-  icon: string;
-  stats: CourseStats;
-  isFree: boolean;
-}
 
 export default function CourseCard({ course }: { course: any }) {
   console.log(course);

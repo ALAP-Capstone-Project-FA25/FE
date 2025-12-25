@@ -20,7 +20,7 @@ export default function ProfileHeader({ profile }: ProfileHeaderProps) {
     : 'Người dùng';
   const username = profile?.username || '';
   const email = profile?.email || '';
-  const avatar = profile?.avatar || '/professional-portrait-avatar.png';
+  const avatar = profile?.avatar || 'https://img.freepik.com/premium-vector/person-with-blue-shirt-that-says-name-person_1029948-7040.jpg?semt=ais_se_enriched&w=740&q=80';
 
   const formatJoinDate = (dateString: string) => {
     if (!dateString) return 'Tham gia gần đây';

@@ -1,7 +1,5 @@
 import { ColumnDef } from '@tanstack/react-table';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Lock, Unlock } from 'lucide-react';
 import __helpers from '@/helpers';
 
 // ---- Types cho rõ ràng ----
@@ -56,6 +54,8 @@ const genderText = (g: number | null | undefined) => {
   if (g === 1) return 'Nữ';
   return 'Khác';
 };
+
+
 
 const formatDateTime = (iso?: any) => {
   if (!iso) return '—';
@@ -129,7 +129,15 @@ export const columns: ColumnDef<UserRow>[] = [
     enableSorting: true,
     cell: ({ row }) => {
       const email = row.original.email;
-      return <span className="truncate">{email}</span>;
+      const confirmed = row.original.emailConfirmed;
+      return (
+        <div className="flex items-center gap-2">
+          <span className="truncate">{email}</span>
+          <Badge variant={confirmed ? 'default' : 'secondary'}>
+            {confirmed ? 'Đã xác minh' : 'Chưa xác minh'}
+          </Badge>
+        </div>
+      );
     }
   },
   {
@@ -145,6 +153,7 @@ export const columns: ColumnDef<UserRow>[] = [
     cell: ({ row }) => genderText(row.original.gender)
   },
 
+
   {
     id: 'lastLogin',
     header: 'Đăng nhập gần nhất',
@@ -153,58 +162,10 @@ export const columns: ColumnDef<UserRow>[] = [
       formatDateTime(getLatestLogin(row.original.loginHistories))
   },
   {
-    id: 'status',
-    header: 'Trạng thái',
-    enableSorting: false,
-    cell: ({ row }) => {
-      const isActive = row.original.isActive;
-      return (
-        <Badge variant={isActive ? 'default' : 'destructive'}>
-          {isActive ? 'Đang hoạt động' : 'Khóa'}
-        </Badge>
-      );
-    }
-  },
-  {
     id: 'createdAt',
     header: 'Tạo lúc',
     enableSorting: true,
     cell: ({ row }) => formatDateTime(row.original.createdAt)
   },
-  {
-    id: 'actions',
-    header: 'Thao tác',
-    enableSorting: false,
-    cell: ({ row, table }) => {
-      const user = row.original;
-      const onToggleLock = (table.options.meta as any)?.onToggleLock;
 
-      return (
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => onToggleLock?.(user)}
-            className={`flex items-center gap-1 ${
-              user.isActive
-                ? 'text-red-600 hover:bg-red-50 hover:text-red-700'
-                : 'text-green-600 hover:bg-green-50 hover:text-green-700'
-            }`}
-          >
-            {user.isActive ? (
-              <>
-                <Lock size={14} />
-                Khóa
-              </>
-            ) : (
-              <>
-                <Unlock size={14} />
-                Mở khóa
-              </>
-            )}
-          </Button>
-        </div>
-      );
-    }
-  }
 ];

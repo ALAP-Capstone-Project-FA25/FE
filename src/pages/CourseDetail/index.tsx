@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Play,
   ChevronDown,
@@ -8,7 +8,6 @@ import {
   BarChart3,
   Video,
   CheckCircle2,
-  Lock,
   Award,
   Users,
   Star,
@@ -19,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { useGetTopicsByCourseIdWithCourse } from '@/queries/topic.query';
 import { useParams } from 'react-router-dom';
+import Joyride, { Step, CallBackProps, STATUS } from 'react-joyride';
 import __helpers from '@/helpers';
 import { useRouter } from '@/routes/hooks';
 import { useAuth } from '@/routes/hooks/use.auth';
@@ -34,6 +34,55 @@ export default function CourseDetailPage() {
   const courseInfo = data?.course || {};
   const { data: authInfo } = useAuth();
   console.log(authInfo);
+
+  // Tour guide state
+  const [runTour, setRunTour] = useState(false);
+
+  // Tour steps cho CourseDetail - bỏ step 1, thay step 4
+  const courseDetailSteps: Step[] = [
+    {
+      target: '.course-content',
+      content: 'Danh sách tất cả các chương và bài học trong khóa học. Bạn có thể mở rộng để xem chi tiết.',
+      title: 'Nội dung khóa học',
+      placement: 'right',
+      disableBeacon: true,
+    },
+    {
+      target: '.course-sidebar',
+      content: 'Khu vực này chứa nút đăng ký khóa học và thông tin chi tiết về khóa học.',
+      title: 'Đăng ký khóa học',
+      placement: 'left',
+    },
+    {
+      target: '.buy-package-button',
+      content: 'Mua gói học ngay giúp bạn có thể học toàn bộ các khóa học được cung cấp bởi hệ thống.',
+      title: 'Mua gói học ngay',
+      placement: 'top',
+    },
+  ];
+
+  // Handle tour callback
+  const handleJoyrideCallback = (data: CallBackProps) => {
+    const { status } = data;
+    const finishedStatuses: string[] = [STATUS.FINISHED, STATUS.SKIPPED];
+
+    if (finishedStatuses.includes(status)) {
+      setRunTour(false);
+      localStorage.setItem('course-detail-tour-seen', 'true');
+    }
+  };
+
+  // Tự động bắt đầu tour khi có dữ liệu khóa học (chỉ 1 lần)
+  useEffect(() => {
+    if (courseInfo.id && courseData.length > 0) {
+      const hasSeenTour = localStorage.getItem('course-detail-tour-seen');
+      if (!hasSeenTour) {
+        setTimeout(() => {
+          setRunTour(true);
+        }, 1500); // Delay 1.5s để UI render xong
+      }
+    }
+  }, [courseInfo.id, courseData.length]);
   const formatDuration = (seconds: number) => {
     const minutes = Math.floor(seconds / 60);
     const remainingSeconds = seconds % 60;
@@ -107,16 +156,52 @@ export default function CourseDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-orange-50 via-white to-amber-50">
-      <LoginDialog
-        open={isLoginDialogOpen}
-        onOpenChange={setIsLoginDialogOpen}
+    <>
+      {/* Tour Guide */}
+      <Joyride
+        steps={courseDetailSteps}
+        run={runTour}
+        continuous
+        showProgress
+        showSkipButton
+        callback={handleJoyrideCallback}
+        styles={{
+          options: {
+            primaryColor: '#f97316', // orange-500
+            zIndex: 10000
+          },
+          tooltip: {
+            borderRadius: 12,
+            padding: 20
+          },
+          buttonNext: {
+            backgroundColor: '#f97316',
+            borderRadius: 8,
+            padding: '8px 16px'
+          },
+          buttonSkip: {
+            color: '#6b7280'
+          }
+        }}
+        locale={{
+          back: 'Quay lại',
+          close: 'Đóng',
+          last: 'Hoàn thành',
+          next: 'Tiếp theo',
+          skip: 'Bỏ qua'
+        }}
       />
 
-      <div className="border-b bg-white px-6 py-12">
+      <div className="min-h-screen bg-gray-200/50">
+        <LoginDialog
+          open={isLoginDialogOpen}
+          onOpenChange={setIsLoginDialogOpen}
+        />
+
+      <div className="px-6 py-12">
         <div className="mx-auto max-w-7xl">
           <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
-            <div className="lg:col-span-2">
+            <div className="course-header lg:col-span-2">
               <div className="mb-4 flex items-center gap-2">
                 <Badge className="border-orange-200 bg-orange-50 text-orange-700 hover:bg-orange-100">
                   <Award className="mr-1 h-3 w-3" />
@@ -173,7 +258,7 @@ export default function CourseDetailPage() {
       <div className="mx-auto max-w-7xl px-6 py-12">
         <div className="grid grid-cols-1 gap-8 lg:grid-cols-3">
           <div className="lg:col-span-2">
-            <Card className="overflow-hidden border-0 shadow-xl">
+            <Card className="course-content overflow-hidden border-0 shadow-xl">
               <CardContent className="p-8">
                 <div className="mb-8 flex items-center justify-between">
                   <div>
@@ -241,11 +326,7 @@ export default function CourseDetailPage() {
                               >
                                 <div className="flex items-center gap-4">
                                   <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-orange-100 to-amber-100 transition-all group-hover:from-orange-200 group-hover:to-amber-200">
-                                    {lesson.isFree ? (
-                                      <Play className="h-4 w-4 fill-orange-600 text-orange-600" />
-                                    ) : (
-                                      <Lock className="h-4 w-4 text-gray-400" />
-                                    )}
+                                    <Play className="h-4 w-4 fill-orange-600 text-orange-600" />
                                   </div>
                                   <div className="flex flex-col">
                                     <span className="text-sm font-medium text-gray-800 group-hover:text-orange-700">
@@ -282,7 +363,7 @@ export default function CourseDetailPage() {
               </CardContent>
             </Card>
 
-            <Card className="mt-8 border-0 shadow-xl">
+            <Card className="course-benefits mt-8 border-0 shadow-xl">
               <CardContent className="p-8">
                 <h3 className="mb-6 text-2xl font-bold text-gray-900">
                   Bạn sẽ học được gì?
@@ -306,7 +387,7 @@ export default function CourseDetailPage() {
           </div>
 
           <div className="lg:col-span-1">
-            <Card className="sticky top-8 hidden overflow-hidden border-2 border-orange-200 shadow-2xl lg:block">
+            <Card className="course-sidebar sticky top-8 hidden overflow-hidden border-2 border-orange-200 shadow-2xl lg:block">
               <div className="relative h-64 overflow-hidden bg-gradient-to-br from-gray-100 to-gray-200">
                 <img
                   src={courseInfo.imageUrl}
@@ -322,7 +403,8 @@ export default function CourseDetailPage() {
 
               <CardContent className="p-6">
                 <div className="mb-6 text-center">
-                  <div className="mb-1 text-sm text-gray-500 line-through">
+                  {/* Ẩn phần hiển thị giá */}
+                  {/* <div className="mb-1 text-sm text-gray-500 line-through">
                     {__helpers.formatCurrency(
                       courseInfo.originalPrice || courseInfo.salePrice * 1.5
                     )}{' '}
@@ -330,7 +412,7 @@ export default function CourseDetailPage() {
                   </div>
                   <div className="mb-1 text-4xl font-bold text-orange-600">
                     {__helpers.formatCurrency(courseInfo.salePrice)} đ
-                  </div>
+                  </div> */}
                   <div className="mb-4 text-xs text-green-600">
                     🔥 Miễn phí khi có đã mua gói
                   </div>
@@ -358,10 +440,10 @@ export default function CourseDetailPage() {
                       </Button>
                     ) : (
                       <Button
-                        className="w-full rounded-lg bg-orange-500 py-6 text-base font-semibold text-white shadow-md transition-all hover:bg-orange-600 hover:shadow-lg"
+                        className="buy-package-button w-full rounded-lg bg-orange-500 py-6 text-base font-semibold text-white shadow-md transition-all hover:bg-orange-600 hover:shadow-lg"
                         onClick={() => router.push('/pricing')}
                       >
-                        Mua gói ngay
+                        Mua gói học ngay
                       </Button>
                     )
                   ) : (
@@ -430,5 +512,6 @@ export default function CourseDetailPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

@@ -1,12 +1,14 @@
-import { User, BookOpen, ChevronLeft } from 'lucide-react';
+import { ChevronLeft } from 'lucide-react';
 import { Lesson } from './types';
 
 export default function HeaderBar({
   percentWatched,
-  currentLessonTitle
+  currentLessonTitle,
+  course
 }: {
   percentWatched: number;
   currentLessonTitle?: Lesson['title'];
+  course?: any;
 }) {
   return (
     <header className="flex items-center justify-between border-b border-gray-700 bg-gray-800 px-4 py-3">
@@ -14,12 +16,17 @@ export default function HeaderBar({
         <button className="rounded-lg p-2 text-white transition-colors hover:bg-gray-700">
           <ChevronLeft className="h-5 w-5" />
         </button>
-        <div className="flex items-center gap-3">
+        <a
+          href={`/course/${course?.courseId}`}
+          className="flex items-center gap-3"
+        >
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 font-bold text-white">
             AP
           </div>
-          <span className="font-medium text-white">Kiến Thức Nhập Môn</span>
-        </div>
+          <span className="font-medium text-white">
+            Khóa học: {course?.title}
+          </span>
+        </a>
       </div>
 
       <div className="flex items-center gap-6">
@@ -31,14 +38,6 @@ export default function HeaderBar({
             {currentLessonTitle ? `Đang học: ${currentLessonTitle}` : '—'}
           </span>
         </div>
-        <button className="rounded-lg px-4 py-2 text-gray-300 transition-colors hover:bg-gray-700 hover:text-white">
-          <User className="mr-2 inline h-4 w-4" />
-          Ghi chú
-        </button>
-        <button className="rounded-lg px-4 py-2 text-gray-300 transition-colors hover:bg-gray-700 hover:text-white">
-          <BookOpen className="mr-2 inline h-4 w-4" />
-          Hướng dẫn
-        </button>
       </div>
     </header>
   );
