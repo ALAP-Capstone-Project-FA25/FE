@@ -2,6 +2,7 @@ import { ColumnDef } from '@tanstack/react-table';
 import { CellAction } from './cell-action';
 import __helpers from '@/helpers';
 import { useSearchParams } from 'react-router-dom';
+import { CourseType } from '@/types/api.types';
 
 // const StudentPaperStatus = {
 //   UPLOADED: 0,
@@ -85,6 +86,29 @@ export const columns: ColumnDef<any>[] = [
           {mentor.firstName} {mentor.lastName}
         </span>
       );
+    }
+  },
+  {
+    accessorKey: 'courseType',
+    header: 'Loại khóa học',
+    enableSorting: true,
+    cell: ({ row }) => {
+      const courseType = row.original.courseType;
+      const typeLabels: Record<CourseType, string> = {
+        [CourseType.AS_LEVEL]: 'AS Level',
+        [CourseType.A2_LEVEL]: 'A2 Level',
+        [CourseType.BOTH]: 'Cả hai'
+      };
+      return <span>{typeLabels[courseType] || 'N/A'}</span>;
+    }
+  },
+  {
+    accessorKey: 'difficulty',
+    header: 'Độ khó',
+    enableSorting: true,
+    cell: ({ row }) => {
+      const difficulty = row.original.difficulty || 1;
+      return <span>{'⭐'.repeat(difficulty)} ({difficulty} sao)</span>;
     }
   },
 

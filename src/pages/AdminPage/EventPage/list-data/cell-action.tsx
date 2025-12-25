@@ -448,7 +448,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
                             onValueChange={(value) =>
                               field.onChange(parseInt(value))
                             }
-                            value={field.value?.toString()}
+                            value={field.value > 0 ? field.value.toString() : undefined}
                           >
                             <FormControl>
                               <SelectTrigger className="focus:border-orange-400 focus:ring-orange-400/20">

@@ -60,6 +60,7 @@ export default function VideoSection({
         <QuizPanel
           currentQuiz={currentQuiz}
           topic={topicForQuiz}
+          userTopicId={topicForQuiz.userTopicId || 0}
           quizStarted={quizStarted}
           setQuizStarted={setQuizStarted}
           currentQuestionIndex={currentQuestionIndex}

@@ -3,13 +3,20 @@ import {
   ChevronRight,
   FileText,
   CheckCircle,
-  Clock
+  Clock,
+  BookOpen,
+  Loader2
 } from 'lucide-react';
 import { QuizItem, Topic, TopicQuestion } from './types';
+import { useSubmitTopicQuiz, SuggestedLessonDto } from '@/queries/topic-quiz.query';
+import { useState, useEffect } from 'react';
+import { useRouter } from '@/routes/hooks';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function QuizPanel({
   currentQuiz,
   topic,
+  userTopicId,
   quizStarted,
   setQuizStarted,
   currentQuestionIndex,
@@ -24,6 +31,7 @@ export default function QuizPanel({
 }: {
   currentQuiz: QuizItem;
   topic: Topic;
+  userTopicId: number;
   quizStarted: boolean;
   setQuizStarted: (b: boolean) => void;
   currentQuestionIndex: number;
@@ -44,6 +52,53 @@ export default function QuizPanel({
   resetQuiz: () => void;
   exitQuiz: () => void;
 }) {
+  const { mutateAsync: submitQuiz, isPending: isSubmitting } = useSubmitTopicQuiz();
+  const [quizResult, setQuizResult] = useState<{ suggestedLessons: SuggestedLessonDto[] } | null>(null);
+  const router = useRouter();
+  const { toast } = useToast();
+
+  // Submit quiz when showing results
+  useEffect(() => {
+    if (showResults && !quizResult) {
+      const submitQuizData = async () => {
+        try {
+          const [err, data] = await submitQuiz({
+            topicId: topic.id,
+            userTopicId: userTopicId,
+            answers: selectedAnswers
+          });
+
+          if (err) {
+            toast({
+              title: 'Lỗi',
+              description: err.message || 'Có lỗi xảy ra khi nộp bài',
+              variant: 'destructive'
+            });
+          } else if (data?.data) {
+            setQuizResult({ suggestedLessons: data.data.suggestedLessons || [] });
+          }
+        } catch (error: any) {
+          toast({
+            title: 'Lỗi',
+            description: error.message || 'Có lỗi xảy ra',
+            variant: 'destructive'
+          });
+        }
+      };
+
+      submitQuizData();
+    }
+  }, [showResults, quizResult, submitQuiz, topic.id, userTopicId, selectedAnswers, toast]);
+
+  const handleNavigateToLesson = (lessonId: number, courseId: number) => {
+    exitQuiz();
+    router.push(`/learning/${courseId}?lessonId=${lessonId}`);
+  };
+
+  const handleResetQuiz = () => {
+    setQuizResult(null);
+    resetQuiz();
+  };
   if (!quizStarted) {
     return (
       <div className="flex h-full flex-col items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900 p-8">
@@ -158,9 +213,53 @@ export default function QuizPanel({
             })}
           </div>
 
+          {/* Suggested Lessons Section */}
+          {isSubmitting ? (
+            <div className="mb-6 flex items-center justify-center py-4">
+              <Loader2 className="h-6 w-6 animate-spin text-orange-500" />
+              <span className="ml-2 text-gray-600">Đang phân tích kết quả...</span>
+            </div>
+          ) : quizResult && quizResult.suggestedLessons.length > 0 && (
+            <div className="mb-6 rounded-lg border-2 border-orange-200 bg-orange-50 p-4">
+              <div className="mb-3 flex items-center gap-2">
+                <BookOpen className="h-5 w-5 text-orange-600" />
+                <h3 className="text-lg font-semibold text-orange-900">
+                  Bài học gợi ý để củng cố kiến thức
+                </h3>
+              </div>
+              <p className="mb-4 text-sm text-orange-800">
+                Dựa trên các câu trả lời sai, chúng tôi gợi ý các bài học sau để bạn ôn tập:
+              </p>
+              <div className="space-y-2">
+                {quizResult.suggestedLessons.map((lesson) => (
+                  <div
+                    key={lesson.lessonId}
+                    className="flex items-center justify-between rounded-lg border border-orange-300 bg-white p-3 hover:bg-orange-50"
+                  >
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{lesson.lessonTitle}</p>
+                      <p className="text-xs text-gray-600">
+                        {lesson.courseTitle} • {lesson.topicTitle}
+                      </p>
+                      <p className="mt-1 text-xs text-orange-600">
+                        {lesson.wrongQuestionCount} câu hỏi liên quan
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleNavigateToLesson(lesson.lessonId, lesson.courseId)}
+                      className="ml-4 rounded-lg bg-orange-500 px-4 py-2 text-sm font-medium text-white transition-all hover:bg-orange-600"
+                    >
+                      Xem bài học
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div className="flex gap-4">
             <button
-              onClick={resetQuiz}
+              onClick={handleResetQuiz}
               className="flex-1 rounded-lg border-2 border-orange-500 bg-white py-3 font-semibold text-orange-500 transition-all hover:bg-orange-50"
             >
               Làm Lại

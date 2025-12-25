@@ -60,15 +60,28 @@ export default function ForgotPasswordForm({
 
       {success ? (
         <div className="space-y-4">
-          <Alert className="border-green-500 text-green-500">
-            <CheckCircle2 className="h-4 w-4" />
-            <AlertDescription>
-              Hướng dẫn đặt lại mật khẩu đã được gửi đến email của bạn.
+          <Alert className="border-green-500 bg-green-50 text-green-700">
+            <CheckCircle2 className="h-4 w-4 text-green-600" />
+            <AlertDescription className="text-green-700">
+              Hướng dẫn đặt lại mật khẩu đã được gửi đến email của bạn. Vui lòng
+              kiểm tra hộp thư và làm theo hướng dẫn.
             </AlertDescription>
           </Alert>
-          <Button variant="outline" className="w-full" onClick={onCancel}>
-            Quay lại đăng nhập
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" className="flex-1" onClick={onCancel}>
+              Quay lại đăng nhập
+            </Button>
+            <Button
+              variant="outline"
+              className="flex-1"
+              onClick={() => {
+                setSuccess(false);
+                setEmail('');
+              }}
+            >
+              Gửi lại
+            </Button>
+          </div>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-4">

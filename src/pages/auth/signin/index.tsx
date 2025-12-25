@@ -16,9 +16,11 @@ import {
   BookOpen,
   Star
 } from 'lucide-react';
-import { useLogin } from '@/queries/auth.query';
+import { useLogin, useForgotPassword } from '@/queries/auth.query';
 import __helpers from '@/helpers';
 import { toast } from '@/components/ui/use-toast';
+import ForgotPasswordForm from './components/forgot-password-form';
+import { Dialog, DialogContent } from '@/components/ui/dialog';
 
 export default function AdminLoginPage() {
   const [userName, setUserName] = useState('');
@@ -26,7 +28,9 @@ export default function AdminLoginPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [showForgotPassword, setShowForgotPassword] = useState(false);
   const { mutateAsync: login } = useLogin();
+  const forgotPasswordMutation = useForgotPassword();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -263,12 +267,13 @@ export default function AdminLoginPage() {
             {/* Footer Links */}
             <div className="mt-8 space-y-4 border-t border-gray-200 pt-6 text-center">
               <div>
-                <a
-                  href="#"
+                <button
+                  type="button"
+                  onClick={() => setShowForgotPassword(true)}
                   className="text-sm text-blue-600 transition-colors hover:text-blue-700 hover:underline"
                 >
                   Quên mật khẩu?
-                </a>
+                </button>
               </div>
               <div className="text-sm text-gray-600">
                 Cần hỗ trợ?{' '}
@@ -289,6 +294,35 @@ export default function AdminLoginPage() {
           </div>
         </Card>
       </div>
+
+      {/* Forgot Password Dialog */}
+      <Dialog open={showForgotPassword} onOpenChange={setShowForgotPassword}>
+        <DialogContent className="sm:max-w-md">
+          <ForgotPasswordForm
+            onSubmit={async (email: string) => {
+              try {
+                await forgotPasswordMutation.mutateAsync(email);
+                toast({
+                  title: 'Thành công',
+                  description:
+                    'Email đặt lại mật khẩu đã được gửi. Vui lòng kiểm tra hộp thư của bạn.',
+                  variant: 'default'
+                });
+              } catch (error: any) {
+                toast({
+                  title: 'Lỗi',
+                  description:
+                    error?.message ||
+                    'Có lỗi xảy ra khi gửi email đặt lại mật khẩu',
+                  variant: 'destructive'
+                });
+                throw error;
+              }
+            }}
+            onCancel={() => setShowForgotPassword(false)}
+          />
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

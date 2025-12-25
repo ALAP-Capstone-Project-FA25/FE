@@ -18,6 +18,8 @@ import { toast } from '@/components/ui/use-toast';
 import { HubConnection, HubConnectionState } from '@microsoft/signalr';
 import { createChatConnection } from '@/lib/signalr';
 import BaseRequest from '@/config/axios.config';
+import meetService from '@/services/meet.service';
+import { MeetStatus } from '@/components/meet/MeetStatus';
 
 enum MessageType {
   TEXT = 0,
@@ -52,6 +54,7 @@ export default function ChatDialog({
   const [isLoading, setIsLoading] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [showMeetingConfirm, setShowMeetingConfirm] = useState(false);
+  const [isGeneratingMeet, setIsGeneratingMeet] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -63,7 +66,7 @@ export default function ChatDialog({
   const typingTimeoutRef = useRef<number | null>(null);
 
   const { data: chatroomData, isLoading: isChatroomLoading } =
-    useGetChatroomByCourseAndUser(id);
+    useGetChatroomByCourseAndUser(id ? parseInt(id) : 0);
   const { mutateAsync: sendMessageToChatroom } = useSendMessageToChatroom();
 
   useEffect(() => {
@@ -247,32 +250,57 @@ export default function ChatDialog({
   };
 
   const handleSendMeeting = async () => {
-    // Generate a quick meeting link (you can customize this)
-    const meetingLink = `https://meet.google.com/${generateMeetingId()}`;
+    setIsGeneratingMeet(true);
+    
+    try {
+      // Sử dụng Meet service để tạo link thật
+      const meetingLink = await meetService.generateMeetLink();
 
-    await handleSend(MessageType.MEETING, meetingLink);
-    setShowMeetingConfirm(false);
+      await handleSend(MessageType.MEETING, meetingLink);
+      setShowMeetingConfirm(false);
 
-    toast({
-      title: 'Thành công',
-      description: 'Đã gửi link meeting'
-    });
-  };
-
-  const generateMeetingId = () => {
-    // Generate random meeting ID
-    const chars = 'abcdefghijklmnopqrstuvwxyz';
-    let id = '';
-    for (let i = 0; i < 3; i++) {
-      for (let j = 0; j < 3; j++) {
-        id += chars.charAt(Math.floor(Math.random() * chars.length));
-      }
-      if (i < 2) id += '-';
+      toast({
+        title: 'Thành công',
+        description: 'Đã tạo và gửi link meeting'
+      });
+    } catch (error: any) {
+      console.error('Error generating meet link:', error);
+      toast({
+        title: 'Lỗi',
+        description: error?.message || 'Không thể tạo Meet link',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsGeneratingMeet(false);
     }
-    return id;
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
+  const handleQuickMeeting = async () => {
+    setIsGeneratingMeet(true);
+    
+    try {
+      // Tạo Meet link nhanh mà không cần confirm
+      const meetingLink = await meetService.generateMeetLink();
+
+      await handleSend(MessageType.MEETING, meetingLink);
+
+      toast({
+        title: 'Thành công',
+        description: 'Đã tạo và gửi Meet link nhanh'
+      });
+    } catch (error: any) {
+      console.error('Error generating quick meet link:', error);
+      toast({
+        title: 'Lỗi',
+        description: error?.message || 'Không thể tạo Meet link',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsGeneratingMeet(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSend();
@@ -348,59 +376,10 @@ export default function ChatDialog({
     // MEETING type
     if (msgType === MessageType.MEETING || msgType === 2) {
       return (
-        <div className="space-y-3">
-          <div
-            className={`flex items-start gap-3 rounded-lg p-3 ${
-              message.isUser
-                ? 'bg-white/10'
-                : 'border border-blue-500/20 bg-blue-500/10'
-            }`}
-          >
-            <div
-              className={`rounded-lg p-2 ${
-                message.isUser ? 'bg-white/10' : 'bg-blue-500/20'
-              }`}
-            >
-              <Video
-                className={`h-5 w-5 ${
-                  message.isUser ? 'text-white' : 'text-blue-400'
-                }`}
-              />
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="mb-1.5 text-sm font-medium">
-                {message.isUser
-                  ? 'Bạn đã gửi link meeting'
-                  : 'Mentor đã gửi link meeting'}
-              </p>
-              <a
-                href={message.content}
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`block break-all font-mono text-xs transition-colors ${
-                  message.isUser
-                    ? 'text-orange-100 hover:text-white hover:underline'
-                    : 'text-blue-400 hover:text-blue-300 hover:underline'
-                }`}
-              >
-                {message.content}
-              </a>
-            </div>
-          </div>
-          <a
-            href={message.content}
-            target="_blank"
-            rel="noopener noreferrer"
-            className={`inline-flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium transition-all ${
-              message.isUser
-                ? 'bg-white/10 text-white hover:bg-white/20'
-                : 'bg-blue-500 text-white shadow-lg shadow-blue-500/20 hover:bg-blue-600'
-            }`}
-          >
-            <Video className="h-4 w-4" />
-            Tham gia meeting ngay
-          </a>
-        </div>
+        <MeetStatus 
+          meetLink={message.content} 
+          isUser={message.isUser} 
+        />
       );
     }
 
@@ -560,7 +539,8 @@ export default function ChatDialog({
                 <h4 className="font-medium text-white">Gửi link meeting</h4>
               </div>
               <p className="mb-4 text-sm text-gray-400">
-                Bạn có chắc muốn tạo và gửi link meeting cho mentor?
+                Hệ thống sẽ tạo một Google Meet link mới và gửi cho mentor. 
+                Link này có thể được sử dụng ngay lập tức.
               </p>
               <div className="flex gap-2">
                 <button
@@ -571,12 +551,16 @@ export default function ChatDialog({
                 </button>
                 <button
                   onClick={handleSendMeeting}
-                  disabled={isLoading}
+                  disabled={isLoading || isGeneratingMeet}
                   className="flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm text-white transition-colors hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-50"
                 >
                   <div className="flex items-center justify-center gap-2">
-                    <Check className="h-4 w-4" />
-                    Xác nhận
+                    {isGeneratingMeet ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Check className="h-4 w-4" />
+                    )}
+                    {isGeneratingMeet ? 'Đang tạo...' : 'Xác nhận'}
                   </div>
                 </button>
               </div>
@@ -604,15 +588,20 @@ export default function ChatDialog({
               <ImageIcon className="h-5 w-5" />
             </button>
 
-            {/* Meeting Button */}
+            {/* Quick Meeting Button */}
             <button
-              onClick={() => setShowMeetingConfirm(true)}
-              disabled={isLoading || !chatroomData?.id}
-              className="rounded-lg border border-gray-700 bg-gray-800 p-2 text-gray-400 transition-colors hover:bg-gray-700 hover:text-blue-400 disabled:cursor-not-allowed disabled:opacity-50"
-              title="Gửi link meeting"
+              onClick={handleQuickMeeting}
+              disabled={isLoading || isGeneratingMeet || !chatroomData?.id}
+              className="rounded-lg border border-blue-600/50 bg-blue-600/10 p-2 text-blue-400 transition-colors hover:bg-blue-600/20 hover:text-blue-300 disabled:cursor-not-allowed disabled:opacity-50"
+              title="Tạo Meet link nhanh"
             >
-              <Video className="h-5 w-5" />
+              {isGeneratingMeet ? (
+                <Loader2 className="h-5 w-5 animate-spin" />
+              ) : (
+                <Video className="h-5 w-5" />
+              )}
             </button>
+
           </div>
 
           <div className="flex gap-2">
@@ -623,7 +612,7 @@ export default function ChatDialog({
                 setInput(e.target.value);
                 sendTyping();
               }}
-              onKeyPress={handleKeyPress}
+              onKeyDown={handleKeyDown}
               placeholder="Nhập câu hỏi của bạn... (hỗ trợ Markdown)"
               rows={1}
               disabled={isLoading || !chatroomData?.id}

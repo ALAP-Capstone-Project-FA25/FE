@@ -11,6 +11,7 @@ export interface TopicQuestion {
   topicId: number;
   question: string;
   maxChoices: number;
+  referrerLessonId?: number;
   topicQuestionAnswers: TopicQuestionAnswer[];
   id: number;
   createdAt: string;
@@ -39,6 +40,7 @@ export interface Topic {
   orderIndex: number;
   isCurrent: boolean;
   courseId: number;
+  userTopicId?: number;
   lessons: Lesson[];
   topicQuestions: TopicQuestion[];
   createdAt: string;

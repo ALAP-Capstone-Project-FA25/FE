@@ -9,7 +9,7 @@ import DeleteNoteDialog from './DeleteNoteDialog';
 import { getYouTubeVideoId, mergeRanges, uuid } from './utils';
 import { Lesson, Note, QuizItem, Topic } from './types';
 import type { YouTubeProps } from 'react-youtube';
-import { useParams } from 'react-router-dom';
+import { useParams, useSearchParams } from 'react-router-dom';
 import { useGetTopicsByPagingByStudent } from '@/queries/topic.query';
 import {
   useGetUserCourseById,
@@ -33,6 +33,8 @@ export default function VideoLearningPage() {
   const playerRef = useRef<any>(null);
   const [ytDuration, setYtDuration] = useState<number>(0);
   const { id } = useParams();
+  const [searchParams] = useSearchParams();
+  const lessonIdFromQuery = searchParams.get('lessonId');
   const { data: userCourseData } = useGetUserCourseById(parseInt(id || '0'));
   const [notes, setNotes] = useState<Note[]>([]);
   const [watchedRanges, setWatchedRanges] = useState<[number, number][]>([]);
@@ -54,6 +56,20 @@ export default function VideoLearningPage() {
 
   useEffect(() => {
     if (courseData.length > 0 && !currentLesson && !currentQuiz) {
+      // Nếu có lessonId từ query param, tìm lesson đó
+      if (lessonIdFromQuery) {
+        const lessonId = parseInt(lessonIdFromQuery);
+        for (const topic of courseData) {
+          const lesson = topic.lessons.find((l) => l.id === lessonId);
+          if (lesson) {
+            setCurrentLesson(lesson);
+            setExpandedSections([topic.id]);
+            return;
+          }
+        }
+      }
+
+      // Nếu không có lessonId từ query, tìm lesson hiện tại
       const currentTopic = courseData.find((topic) => topic.isCurrent);
 
       if (currentTopic) {
@@ -76,7 +92,7 @@ export default function VideoLearningPage() {
         }
       }
     }
-  }, [courseData, currentLesson, currentQuiz]);
+  }, [courseData, currentLesson, currentQuiz, lessonIdFromQuery]);
 
   // Tự động cập nhật tiến độ cho document sau 3 giây (để đảm bảo user đang xem)
   useEffect(() => {
@@ -106,7 +122,7 @@ export default function VideoLearningPage() {
     setCurrentLesson(lesson);
     setCurrentQuiz(null);
     setIsPlaying(true);
-    
+
     // Cập nhật tiến độ khi chọn lesson
     await updateProgress({
       topicId: lesson.topicId,
@@ -121,15 +137,19 @@ export default function VideoLearningPage() {
 
   const getAllLessons = (): Lesson[] => {
     // Sort topics theo orderIndex trước
-    const sortedTopics = [...courseData].sort((a, b) => a.orderIndex - b.orderIndex);
-    
+    const sortedTopics = [...courseData].sort(
+      (a, b) => a.orderIndex - b.orderIndex
+    );
+
     // Với mỗi topic đã sort, lấy lessons và sort theo orderIndex
     const allLessons: Lesson[] = [];
     sortedTopics.forEach((topic) => {
-      const sortedLessons = [...topic.lessons].sort((a, b) => a.orderIndex - b.orderIndex);
+      const sortedLessons = [...topic.lessons].sort(
+        (a, b) => a.orderIndex - b.orderIndex
+      );
       allLessons.push(...sortedLessons);
     });
-    
+
     return allLessons;
   };
 
@@ -408,7 +428,7 @@ export default function VideoLearningPage() {
       />
 
       <div className="flex flex-1 overflow-hidden">
-        <div className="flex flex-1 overflow-scroll flex-col bg-black">
+        <div className="flex flex-1 flex-col overflow-scroll bg-black">
           {currentLesson?.lessonType === LessonType.DOCUMENT ? (
             <DocumentViewer
               documentUrl={currentLesson.documentUrl}

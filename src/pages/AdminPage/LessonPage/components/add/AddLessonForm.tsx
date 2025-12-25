@@ -156,29 +156,7 @@ export default function AddLessonForm() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="orderIndex">
-                      <ListOrdered className="mr-1 inline h-4 w-4" />
-                      Thứ tự <span className="text-orange-600">*</span>
-                    </Label>
-                    <div className="relative">
-                      <Input
-                        id="orderIndex"
-                        type="number"
-                        placeholder="1"
-                        value={orderIndex}
-                        onChange={(e) => setOrderIndex(e.target.value ? parseInt(e.target.value) : '')}
-                        required
-                        className="pr-20"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-green-600 font-medium">
-                        Tự động
-                      </span>
-                    </div>
-                    <p className="text-xs text-gray-500">
-                      Thứ tự được tự động setup dựa trên bài học cuối
-                    </p>
-                  </div>
+                
 
                   <div className="space-y-2">
                     <Label htmlFor="duration">

@@ -18,11 +18,16 @@ export function OverViewTab() {
   const [searchParams, setSearchParams] = useSearchParams();
   const page = Number(searchParams.get('page') || 1);
   const pageLimit = Number(searchParams.get('limit') || 10);
-  
+
   const [keyword, setKeyword] = useState('');
   const [status, setStatus] = useState<number | undefined>(undefined);
-  
-  const { data, isPending } = useGetPaymentByPaging(page, pageLimit, keyword, status);
+
+  const { data, isPending } = useGetPaymentByPaging(
+    page,
+    pageLimit,
+    keyword,
+    status
+  );
 
   const listObjects = data?.listObjects || [];
   const totalRecords = data?.totalRecords || 0;
@@ -36,7 +41,7 @@ export function OverViewTab() {
     <>
       <div className="grid gap-6 rounded-md p-4 pt-0 ">
         <h1 className="text-center font-bold">DANH SÁCH HÓA ĐƠN</h1>
-        
+
         {/* Filters */}
         <div className="flex items-center gap-4">
           <div className="flex-1">
@@ -62,10 +67,10 @@ export function OverViewTab() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tất cả</SelectItem>
-              <SelectItem value="0">Chờ thanh toán</SelectItem>
-              <SelectItem value="1">Thành công</SelectItem>
-              <SelectItem value="2">Thất bại</SelectItem>
+              <SelectItem value="1">Chờ thanh toán</SelectItem>
+              <SelectItem value="2">Thành công</SelectItem>
               <SelectItem value="3">Đã hủy</SelectItem>
+              <SelectItem value="4">Hết hạn</SelectItem>
             </SelectContent>
           </Select>
           <Button onClick={handleSearch}>
@@ -73,7 +78,7 @@ export function OverViewTab() {
             Tìm kiếm
           </Button>
         </div>
-        
+
         {isPending ? (
           <div className="p-5">
             <DataTableSkeleton
