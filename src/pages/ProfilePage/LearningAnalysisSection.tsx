@@ -42,7 +42,6 @@ export default function LearningAnalysisSection() {
     );
   }
 
-  console.log(statistics);
 
   const stats = statistics;
   const hasData = stats && stats.totalQuizAttempts > 0;

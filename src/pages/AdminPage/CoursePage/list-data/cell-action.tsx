@@ -142,6 +142,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
 
       <EditCourseDialog
         courseId={data.id}
+        courseData={data}
         isOpen={isEditDialogOpen}
         onClose={() => setIsEditDialogOpen(false)}
       />

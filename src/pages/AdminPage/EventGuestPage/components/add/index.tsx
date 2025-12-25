@@ -192,12 +192,22 @@ export default function CreateEventForm() {
 
   const onSubmit = async (values: FormValues) => {
     try {
+      // Convert dates from VN time (UTC+7) to UTC before sending
+      const convertVNTimeToUTC = (dateString: string): string => {
+        const [datePart, timePart] = dateString.split('T');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const [hours, minutes] = timePart.split(':').map(Number);
+        const vnDate = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+        const utcDate = new Date(vnDate.getTime() - 7 * 60 * 60 * 1000);
+        return utcDate.toISOString();
+      };
+
       const payload = {
         id: 0,
         ...values,
         imageUrls: imageUrl || '',
-        startDate: new Date(values.startDate).toISOString(),
-        endDate: new Date(values.endDate).toISOString()
+        startDate: convertVNTimeToUTC(values.startDate),
+        endDate: convertVNTimeToUTC(values.endDate)
       };
 
       const [err] = await createUpdateEvent(payload);

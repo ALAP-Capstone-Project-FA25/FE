@@ -18,11 +18,17 @@ export default function SpeakerPage() {
   const [keyword, setKeyword] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isDetailsDialogOpen, setIsDetailsDialogOpen] = useState(false);
-  const [selectedSpeakerId, setSelectedSpeakerId] = useState<number | null>(null);
-  
+  const [selectedSpeakerId, setSelectedSpeakerId] = useState<number | null>(
+    null
+  );
+
   const debouncedKeyword = useDebounce(keyword, 500);
-  const { data: speakersData, isLoading } = useGetSpeakers(page, 10, debouncedKeyword);
-  console.log(speakersData)
+  const { data: speakersData, isLoading } = useGetSpeakers(
+    page,
+    10,
+    debouncedKeyword
+  );
+  console.log(speakersData);
   const speakers = speakersData?.listObjects || [];
   const totalPages = speakersData?.totalPages || 1;
 
@@ -39,16 +45,15 @@ export default function SpeakerPage() {
     <BasePages
       className="relative flex-1 space-y-6 overflow-y-auto px-4"
       pageHead="Quản lý Speaker"
-      breadcrumbs={[
-        { title: 'Dashboard', link: '/admin/dashboard' },
-        { title: 'Quản lý Speaker', link: '/admin/speakers' }
-      ]}
+      breadcrumbs={[{ title: 'Quản lý Speaker', link: '/admin/speakers' }]}
     >
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold text-gray-900">Quản lý Speaker</h2>
-          <p className="text-gray-600">Tạo và quản lý tài khoản cho các speaker</p>
+          <p className="text-gray-600">
+            Tạo và quản lý tài khoản cho các speaker
+          </p>
         </div>
         <Button
           onClick={() => setIsCreateDialogOpen(true)}
@@ -65,12 +70,14 @@ export default function SpeakerPage() {
           <CardContent className="p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Tổng Speaker</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Tổng Speaker
+                </p>
                 <p className="text-3xl font-bold text-gray-900">
                   {speakersData?.totalCount || 0}
                 </p>
               </div>
-              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-blue-500 to-blue-600">
                 <Users className="h-6 w-6 text-white" />
               </div>
             </div>
@@ -83,10 +90,10 @@ export default function SpeakerPage() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Hoạt động</p>
                 <p className="text-3xl font-bold text-green-600">
-                  {speakers.filter(s => s.isActive).length}
+                  {speakers.filter((s) => s.isActive).length}
                 </p>
               </div>
-              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-green-500 to-green-600">
                 <Users className="h-6 w-6 text-white" />
               </div>
             </div>
@@ -99,12 +106,16 @@ export default function SpeakerPage() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Tạo hôm nay</p>
                 <p className="text-3xl font-bold text-orange-600">
-                  {speakers.filter(s => 
-                    format(new Date(s.createdAt), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
-                  ).length}
+                  {
+                    speakers.filter(
+                      (s) =>
+                        format(new Date(s.createdAt), 'yyyy-MM-dd') ===
+                        format(new Date(), 'yyyy-MM-dd')
+                    ).length
+                  }
                 </p>
               </div>
-              <div className="h-12 w-12 rounded-xl bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center">
+              <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-orange-500 to-orange-600">
                 <Plus className="h-6 w-6 text-white" />
               </div>
             </div>
@@ -141,9 +152,9 @@ export default function SpeakerPage() {
                     <div className="flex items-start space-x-4">
                       <div className="h-12 w-12 rounded-full bg-gray-200"></div>
                       <div className="flex-1 space-y-2">
-                        <div className="h-4 bg-gray-200 rounded w-3/4"></div>
-                        <div className="h-3 bg-gray-200 rounded w-1/2"></div>
-                        <div className="h-3 bg-gray-200 rounded w-2/3"></div>
+                        <div className="h-4 w-3/4 rounded bg-gray-200"></div>
+                        <div className="h-3 w-1/2 rounded bg-gray-200"></div>
+                        <div className="h-3 w-2/3 rounded bg-gray-200"></div>
                       </div>
                     </div>
                   </CardContent>
@@ -151,13 +162,15 @@ export default function SpeakerPage() {
               ))}
             </div>
           ) : speakers.length === 0 ? (
-            <div className="text-center py-12">
+            <div className="py-12 text-center">
               <Users className="mx-auto h-12 w-12 text-gray-400" />
               <h3 className="mt-4 text-lg font-medium text-gray-900">
                 Chưa có speaker nào
               </h3>
               <p className="mt-2 text-gray-600">
-                {keyword ? 'Không tìm thấy speaker phù hợp' : 'Bắt đầu bằng cách tạo speaker đầu tiên'}
+                {keyword
+                  ? 'Không tìm thấy speaker phù hợp'
+                  : 'Bắt đầu bằng cách tạo speaker đầu tiên'}
               </p>
               {!keyword && (
                 <Button
@@ -172,7 +185,10 @@ export default function SpeakerPage() {
           ) : (
             <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
               {speakers.map((speaker) => (
-                <Card key={speaker.id} className="hover:shadow-lg transition-shadow">
+                <Card
+                  key={speaker.id}
+                  className="transition-shadow hover:shadow-lg"
+                >
                   <CardContent className="p-6">
                     <div className="flex items-start space-x-4">
                       <Avatar className="h-12 w-12">
@@ -181,44 +197,55 @@ export default function SpeakerPage() {
                           {getInitials(speaker.firstName, speaker.lastName)}
                         </AvatarFallback>
                       </Avatar>
-                      
-                      <div className="flex-1 min-w-0">
+
+                      <div className="min-w-0 flex-1">
                         <div className="flex items-center justify-between">
-                          <h3 className="font-semibold text-gray-900 truncate">
+                          <h3 className="truncate font-semibold text-gray-900">
                             {speaker.firstName} {speaker.lastName}
                           </h3>
-                          <Badge 
-                            variant={speaker.isActive ? "default" : "secondary"}
-                            className={speaker.isActive ? "bg-green-100 text-green-800" : ""}
+                          <Badge
+                            variant={speaker.isActive ? 'default' : 'secondary'}
+                            className={
+                              speaker.isActive
+                                ? 'bg-green-100 text-green-800'
+                                : ''
+                            }
                           >
                             {speaker.isActive ? 'Hoạt động' : 'Tạm dừng'}
                           </Badge>
                         </div>
-                        
+
                         <div className="mt-2 space-y-1">
                           <div className="flex items-center text-sm text-gray-600">
                             <Mail className="mr-2 h-3 w-3" />
                             <span className="truncate">{speaker.email}</span>
                           </div>
-                          
+
                           {speaker.phone && (
                             <div className="flex items-center text-sm text-gray-600">
                               <Phone className="mr-2 h-3 w-3" />
                               <span>{speaker.phone}</span>
                             </div>
                           )}
-                          
+
                           {speaker.address && (
                             <div className="flex items-center text-sm text-gray-600">
                               <MapPin className="mr-2 h-3 w-3" />
-                              <span className="truncate">{speaker.address}</span>
+                              <span className="truncate">
+                                {speaker.address}
+                              </span>
                             </div>
                           )}
                         </div>
-                        
+
                         <div className="mt-3 flex items-center justify-between">
                           <div className="text-xs text-gray-500">
-                            Tạo: {format(new Date(speaker.createdAt), 'dd/MM/yyyy HH:mm', { locale: vi })}
+                            Tạo:{' '}
+                            {format(
+                              new Date(speaker.createdAt),
+                              'dd/MM/yyyy HH:mm',
+                              { locale: vi }
+                            )}
                           </div>
                           <Button
                             variant="ghost"
@@ -247,33 +274,37 @@ export default function SpeakerPage() {
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setPage(p => Math.max(1, p - 1))}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page === 1}
               >
                 Trước
               </Button>
-              
+
               <div className="flex items-center space-x-1">
                 {[...Array(Math.min(5, totalPages))].map((_, i) => {
                   const pageNum = i + 1;
                   return (
                     <Button
                       key={pageNum}
-                      variant={page === pageNum ? "default" : "outline"}
+                      variant={page === pageNum ? 'default' : 'outline'}
                       size="sm"
                       onClick={() => setPage(pageNum)}
-                      className={page === pageNum ? "bg-orange-500 hover:bg-orange-600" : ""}
+                      className={
+                        page === pageNum
+                          ? 'bg-orange-500 hover:bg-orange-600'
+                          : ''
+                      }
                     >
                       {pageNum}
                     </Button>
                   );
                 })}
               </div>
-              
+
               <Button
                 variant="outline"
                 size="sm"
-                onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page === totalPages}
               >
                 Sau

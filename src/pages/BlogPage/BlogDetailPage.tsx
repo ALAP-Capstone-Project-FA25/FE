@@ -16,12 +16,7 @@ import { vi } from 'date-fns/locale';
 import BlogPostSections from '@/components/blog/BlogPostSections';
 import BlogCommentSection from '@/components/blog/BlogCommentSection';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle
-} from '@/components/ui/sheet';
+import { Sheet, SheetContent } from '@/components/ui/sheet';
 import __helpers from '@/helpers';
 import { useGetMyInfo } from '@/queries/user.query';
 import { useState } from 'react';
@@ -249,11 +244,11 @@ export default function BlogDetailPage() {
 
       {/* Comment Sheet */}
       <Sheet open={commentSheetOpen} onOpenChange={setCommentSheetOpen}>
-        <SheetContent side="right" className="w-full sm:max-w-md">
-          <SheetHeader>
-            <SheetTitle>Bình luận ({commentCount})</SheetTitle>
-          </SheetHeader>
-          <div className="mt-6">
+        <SheetContent
+          side="right"
+          className="flex h-full w-full flex-col overflow-hidden sm:max-w-2xl"
+        >
+          <div className="flex-1 overflow-y-auto">
             <BlogCommentSection
               comments={post.comments || []}
               blogPostId={post.id}

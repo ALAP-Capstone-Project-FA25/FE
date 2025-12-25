@@ -116,6 +116,10 @@ const KnowledgeNode = ({
         return 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-500';
       case 'theoretical':
         return 'bg-gradient-to-br from-cyan-50 to-cyan-100 border-cyan-500';
+      case 'topic':
+        return 'bg-gradient-to-br from-lime-50 to-lime-100 border-lime-500';
+      case 'knowledge':
+        return 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-500';
       default:
         // Custom categories - use a default style
         return 'bg-gradient-to-br from-slate-50 to-slate-100 border-slate-500';
@@ -159,7 +163,9 @@ const KnowledgeNode = ({
       beginner: 'Người mới',
       specialized: 'Chuyên ngành',
       practical: 'Thực hành',
-      theoretical: 'Lý thuyết'
+      theoretical: 'Lý thuyết',
+      topic: 'Chủ đề',
+      knowledge: 'Kiến thức'
     };
 
     return categoryLabels[data.category] || data.category;
@@ -264,7 +270,8 @@ const RELATIONSHIP_TYPE_LABELS: Record<string, string> = {
   foundation_of: 'Là nền tảng của',
   equivalent_to: 'Tương đương với',
   leads_to: 'Dẫn đến',
-  prerequisite_for: 'Yêu cầu cho'
+  prerequisite_for: 'Yêu cầu cho',
+  prerequisite_of: 'Yêu cầu của'
 };
 
 const getRelationshipTypeLabel = (type: string): string => {
@@ -438,7 +445,12 @@ const KnowledgeDetailDialog = ({
         color: 'bg-orange-100 text-orange-800',
         label: '🛠️ Thực hành'
       },
-      theoretical: { color: 'bg-cyan-100 text-cyan-800', label: '📚 Lý thuyết' }
+      theoretical: {
+        color: 'bg-cyan-100 text-cyan-800',
+        label: '📚 Lý thuyết'
+      },
+      topic: { color: 'bg-lime-100 text-lime-800', label: '📌 Chủ đề' },
+      knowledge: { color: 'bg-blue-100 text-blue-800', label: '📖 Kiến thức' }
     };
 
     const badge = badges[node.data.category];
@@ -468,7 +480,7 @@ const KnowledgeDetailDialog = ({
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
       <div className="max-h-[90vh] w-full max-w-4xl overflow-y-auto rounded-3xl bg-white shadow-2xl">
         {/* Header */}
-        <div className="sticky top-0 rounded-t-3xl bg-gradient-to-r from-violet-600 via-indigo-600 to-sky-600 p-6 text-white">
+        <div className="sticky top-0 rounded-t-3xl bg-gradient-to-r from-orange-600 via-orange-500 to-orange-400 p-6 text-white">
           <div className="flex items-start justify-between">
             <div className="flex-1">
               <h2 className="mb-2 text-3xl font-bold">{node.data.label}</h2>
@@ -603,30 +615,6 @@ const KnowledgeDetailDialog = ({
 
           {/* Action Buttons */}
           <div className="mt-6 flex gap-3">
-            {node.data.status === 'available' && (
-              <button
-                onClick={async () => {
-                  try {
-                    await startNode(parseInt(node.id));
-                    toast({
-                      title: 'Thành công!',
-                      description: 'Đã bắt đầu học chủ đề này'
-                    });
-                    onClose();
-                  } catch (error) {
-                    toast({
-                      title: 'Lỗi',
-                      description: 'Không thể bắt đầu học',
-                      variant: 'destructive'
-                    });
-                  }
-                }}
-                className="flex-1 rounded-xl bg-gradient-to-r from-violet-600 to-indigo-600 py-3 font-semibold text-white transition-all hover:scale-[1.02] hover:shadow-lg"
-              >
-                Bắt đầu học ngay
-              </button>
-            )}
-
             {node.data.status === 'in-progress' && (
               <>
                 <button
@@ -869,7 +857,9 @@ const KnowledgeGraphViewerInner = () => {
       beginner: 'Người mới',
       specialized: 'Chuyên ngành',
       practical: 'Thực hành',
-      theoretical: 'Lý thuyết'
+      theoretical: 'Lý thuyết',
+      topic: 'Chủ đề',
+      knowledge: 'Kiến thức'
     };
 
     return categoryLabels[category] || category;
@@ -1172,7 +1162,9 @@ const KnowledgeGraphViewerInner = () => {
                 beginner: '#22c55e',
                 specialized: '#6366f1',
                 practical: '#f97316',
-                theoretical: '#06b6d4'
+                theoretical: '#06b6d4',
+                topic: '#84cc16',
+                knowledge: '#2563eb'
               };
               return colors[data.category] || '#6b7280';
             }}
@@ -1181,7 +1173,7 @@ const KnowledgeGraphViewerInner = () => {
         </ReactFlow>
       </div>
 
-      {/* Legend */}
+      {/* Legend
       <div className="absolute bottom-[60px] left-[50px] z-10 max-w-sm rounded-2xl border border-slate-200/50 bg-white/90 p-5 shadow-xl backdrop-blur-xl">
         <h3 className="mb-4 text-lg font-bold text-slate-800">📚 Chú giải</h3>
 
@@ -1232,7 +1224,7 @@ const KnowledgeGraphViewerInner = () => {
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
 
       {selectedNode && (
         <KnowledgeDetailDialog

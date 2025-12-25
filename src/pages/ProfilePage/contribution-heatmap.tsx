@@ -91,7 +91,7 @@ export default function ContributionHeatmap({
     for (const item of loginHistories) {
       if (!item?.loginDate) continue;
 
-      const date = new Date(item.loginDate);
+      const date = startOfDay(new Date(item.loginDate));
       if (isNaN(date.getTime())) continue;
       if (date < startDate || date > endDate) continue;
 

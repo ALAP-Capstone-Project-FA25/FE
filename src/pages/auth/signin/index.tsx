@@ -45,8 +45,21 @@ export default function AdminLoginPage() {
     console.log(res);
     if (!err) {
       const token = res.accessToken;
-      __helpers.cookie_set('AT', token);
-      window.location.href = '/admin/dashboard';
+
+      const userInfo = __helpers.decodeToken(token);
+
+      if (userInfo.role == 'USER') {
+        toast({
+          title: 'Lỗi',
+          description: 'Bạn không có quyền truy cập vào trang này',
+          variant: 'destructive'
+        });
+        setIsLoading(false);
+        return;
+      } else {
+        __helpers.cookie_set('AT', token);
+        window.location.href = '/admin/dashboard';
+      }
     } else {
       toast({
         title: 'Đăng nhập thất bại',

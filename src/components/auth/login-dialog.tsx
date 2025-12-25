@@ -22,7 +22,6 @@ import { Eye, EyeOff, Lock, User as UserIcon, Mail, Phone } from 'lucide-react';
 import { motion, AnimatePresence, useReducedMotion } from 'framer-motion';
 import AccountStatusDialog from './AccountStatusDialog';
 
-
 interface LoginDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -37,7 +36,7 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [remember, setRemember] = useState(true);
-  
+
   // Account status dialog
   const [accountStatusDialog, setAccountStatusDialog] = useState<{
     open: boolean;
@@ -48,7 +47,7 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
     status: null,
     email: undefined
   });
-  
+
   // Register fields
   const [registerData, setRegisterData] = useState({
     firstName: '',
@@ -60,10 +59,10 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
     confirmPassword: '',
     gender: 0
   });
-  
+
   // Forgot password field
   const [forgotEmail, setForgotEmail] = useState('');
-  
+
   const { mutateAsync: loginMutation } = useLogin();
   const { mutateAsync: registerMutation } = useRegister();
   const { mutateAsync: forgotPasswordMutation } = useForgotPassword();
@@ -91,10 +90,16 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
       });
 
       if (error) {
-        const errorMessage = error?.data?.message || error?.message || 'Tên đăng nhập hoặc mật khẩu không đúng';
-        
+        const errorMessage =
+          error?.data?.message ||
+          error?.message ||
+          'Tên đăng nhập hoặc mật khẩu không đúng';
+
         // Kiểm tra các trường hợp lỗi đặc biệt
-        if (errorMessage.includes('User đã bị khóa') || errorMessage.includes('bị khóa')) {
+        if (
+          errorMessage.includes('User đã bị khóa') ||
+          errorMessage.includes('bị khóa')
+        ) {
           setAccountStatusDialog({
             open: true,
             status: 'banned',
@@ -102,8 +107,11 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
           });
           return;
         }
-        
-        if (errorMessage.includes('Email chưa được xác nhận') || errorMessage.includes('chưa được xác thực')) {
+
+        if (
+          errorMessage.includes('Email chưa được xác nhận') ||
+          errorMessage.includes('chưa được xác thực')
+        ) {
           setAccountStatusDialog({
             open: true,
             status: 'unverified',
@@ -111,7 +119,7 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
           });
           return;
         }
-        
+
         // Lỗi thông thường
         toast({
           title: 'Đăng nhập thất bại',
@@ -176,7 +184,11 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
     e.preventDefault();
 
     // Validation
-    if (!registerData.userName || !registerData.email || !registerData.passwordHash) {
+    if (
+      !registerData.userName ||
+      !registerData.email ||
+      !registerData.passwordHash
+    ) {
       toast({
         title: 'Lỗi',
         description: 'Vui lòng điền đầy đủ thông tin bắt buộc',
@@ -267,11 +279,13 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
     setIsLoading(true);
     try {
       const [error] = await forgotPasswordMutation(forgotEmail);
-
+      console.log(error);
       if (error) {
         toast({
-          title: 'Lỗi',
-          description: error?.data?.message || 'Không tìm thấy email',
+          title: 'Xảy ra lỗi',
+          description:
+            error?.data?.message ||
+            'Có lỗi xảy ra khi gửi email đặt lại mật khẩu',
           variant: 'destructive'
         });
         return;
@@ -431,173 +445,187 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                         <DialogTitle className="text-2xl">
                           {viewMode === 'login' && 'Chào mừng trở lại 👋'}
                           {viewMode === 'register' && 'Đăng ký tài khoản 🎓'}
-                          {viewMode === 'forgot-password' && 'Quên mật khẩu? 🔐'}
+                          {viewMode === 'forgot-password' &&
+                            'Quên mật khẩu? 🔐'}
                         </DialogTitle>
                         <DialogDescription>
-                          {viewMode === 'login' && 'Đăng nhập để tiếp tục học với A Level Adaptive Learning'}
-                          {viewMode === 'register' && 'Tạo tài khoản mới để bắt đầu hành trình học tập'}
-                          {viewMode === 'forgot-password' && 'Nhập email để nhận link đặt lại mật khẩu'}
+                          {viewMode === 'login' &&
+                            'Đăng nhập để tiếp tục học với A Level Adaptive Learning'}
+                          {viewMode === 'register' &&
+                            'Tạo tài khoản mới để bắt đầu hành trình học tập'}
+                          {viewMode === 'forgot-password' &&
+                            'Nhập email để nhận link đặt lại mật khẩu'}
                         </DialogDescription>
                       </motion.div>
                     </DialogHeader>
 
                     {viewMode === 'login' && (
                       <form onSubmit={handleLogin} className="mt-4">
-                      <div className="grid gap-4">
-                        <motion.div
-                          className="grid gap-2"
-                          variants={itemVariants}
-                        >
-                          <Label htmlFor="userName">Tên đăng nhập</Label>
-                          <div className="relative">
-                            <UserIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                              id="userName"
-                              value={userName}
-                              onChange={(e) => setUserName(e.target.value)}
-                              placeholder="Nhập tên đăng nhập"
-                              disabled={isLoading}
-                              autoComplete="username"
-                              className="pl-9 focus-visible:ring-2 focus-visible:ring-orange-500"
-                            />
-                          </div>
-                        </motion.div>
+                        <div className="grid gap-4">
+                          <motion.div
+                            className="grid gap-2"
+                            variants={itemVariants}
+                          >
+                            <Label htmlFor="userName">Tên đăng nhập</Label>
+                            <div className="relative">
+                              <UserIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                              <Input
+                                id="userName"
+                                value={userName}
+                                onChange={(e) => setUserName(e.target.value)}
+                                placeholder="Nhập tên đăng nhập"
+                                disabled={isLoading}
+                                autoComplete="username"
+                                className="pl-9 focus-visible:ring-2 focus-visible:ring-orange-500"
+                              />
+                            </div>
+                          </motion.div>
 
-                        <motion.div
-                          className="grid gap-2"
-                          variants={itemVariants}
-                        >
-                          <Label htmlFor="password">Mật khẩu</Label>
-                          <div className="relative">
-                            <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                            <Input
-                              id="password"
-                              type={showPassword ? 'text' : 'password'}
-                              value={password}
-                              onChange={(e) => setPassword(e.target.value)}
-                              placeholder="Nhập mật khẩu"
-                              disabled={isLoading}
-                              autoComplete="current-password"
-                              className="pl-9 pr-10 focus-visible:ring-2 focus-visible:ring-orange-500"
-                            />
+                          <motion.div
+                            className="grid gap-2"
+                            variants={itemVariants}
+                          >
+                            <Label htmlFor="password">Mật khẩu</Label>
+                            <div className="relative">
+                              <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                              <Input
+                                id="password"
+                                type={showPassword ? 'text' : 'password'}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="Nhập mật khẩu"
+                                disabled={isLoading}
+                                autoComplete="current-password"
+                                className="pl-9 pr-10 focus-visible:ring-2 focus-visible:ring-orange-500"
+                              />
+                              <button
+                                type="button"
+                                aria-label={
+                                  showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'
+                                }
+                                onClick={() => setShowPassword((v) => !v)}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-accent"
+                              >
+                                {showPassword ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
+                              </button>
+                            </div>
+                          </motion.div>
+
+                          <motion.div
+                            className="flex items-center justify-between"
+                            variants={itemVariants}
+                          >
+                            <div className="flex items-center gap-2">
+                              <Checkbox
+                                id="remember"
+                                checked={remember}
+                                onCheckedChange={(v) => setRemember(Boolean(v))}
+                                disabled={isLoading}
+                              />
+                              <Label
+                                htmlFor="remember"
+                                className="text-sm text-muted-foreground"
+                              >
+                                Ghi nhớ đăng nhập
+                              </Label>
+                            </div>
                             <button
                               type="button"
-                              aria-label={
-                                showPassword ? 'Ẩn mật khẩu' : 'Hiện mật khẩu'
-                              }
-                              onClick={() => setShowPassword((v) => !v)}
-                              className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-accent"
+                              className="text-sm font-medium text-orange-700 underline-offset-4 hover:underline"
+                              onClick={() => setViewMode('forgot-password')}
                             >
-                              {showPassword ? (
-                                <EyeOff className="h-4 w-4" />
-                              ) : (
-                                <Eye className="h-4 w-4" />
-                              )}
+                              Quên mật khẩu?
                             </button>
-                          </div>
-                        </motion.div>
+                          </motion.div>
 
-                        <motion.div
-                          className="flex items-center justify-between"
-                          variants={itemVariants}
-                        >
-                          <div className="flex items-center gap-2">
-                            <Checkbox
-                              id="remember"
-                              checked={remember}
-                              onCheckedChange={(v) => setRemember(Boolean(v))}
+                          <motion.div variants={itemVariants}>
+                            <Button
+                              type="submit"
                               disabled={isLoading}
-                            />
-                            <Label
-                              htmlFor="remember"
-                              className="text-sm text-muted-foreground"
+                              className="h-10 w-full rounded-lg bg-orange-600 text-white hover:bg-orange-700 focus-visible:ring-2 focus-visible:ring-orange-500"
                             >
-                              Ghi nhớ đăng nhập
-                            </Label>
-                          </div>
-                          <button
-                            type="button"
-                            className="text-sm font-medium text-orange-700 underline-offset-4 hover:underline"
-                            onClick={() => setViewMode('forgot-password')}
+                              {isLoading ? (
+                                <span className="inline-flex items-center gap-2">
+                                  <svg
+                                    className="h-4 w-4 animate-spin"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                  >
+                                    <circle
+                                      className="opacity-25"
+                                      cx="12"
+                                      cy="12"
+                                      r="10"
+                                      stroke="currentColor"
+                                      strokeWidth="4"
+                                    />
+                                    <path
+                                      className="opacity-75"
+                                      d="M4 12a8 8 0 018-8"
+                                      stroke="currentColor"
+                                      strokeWidth="4"
+                                      strokeLinecap="round"
+                                    />
+                                  </svg>
+                                  Đang đăng nhập...
+                                </span>
+                              ) : (
+                                'Đăng nhập'
+                              )}
+                            </Button>
+                          </motion.div>
+
+                          <motion.div
+                            className="text-center text-sm"
+                            variants={itemVariants}
                           >
-                            Quên mật khẩu?
-                          </button>
-                        </motion.div>
+                            <span className="text-muted-foreground">
+                              Chưa có tài khoản?{' '}
+                            </span>
+                            <button
+                              type="button"
+                              className="font-medium text-orange-700 underline-offset-4 hover:underline"
+                              onClick={() => setViewMode('register')}
+                            >
+                              Đăng ký ngay
+                            </button>
+                          </motion.div>
 
-                        <motion.div variants={itemVariants}>
-                          <Button
-                            type="submit"
-                            disabled={isLoading}
-                            className="h-10 w-full rounded-lg bg-orange-600 text-white hover:bg-orange-700 focus-visible:ring-2 focus-visible:ring-orange-500"
+                          <motion.div
+                            className="text-center text-xs text-muted-foreground"
+                            variants={itemVariants}
                           >
-                            {isLoading ? (
-                              <span className="inline-flex items-center gap-2">
-                                <svg
-                                  className="h-4 w-4 animate-spin"
-                                  viewBox="0 0 24 24"
-                                  fill="none"
-                                >
-                                  <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                  />
-                                  <path
-                                    className="opacity-75"
-                                    d="M4 12a8 8 0 018-8"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                    strokeLinecap="round"
-                                  />
-                                </svg>
-                                Đang đăng nhập...
-                              </span>
-                            ) : (
-                              'Đăng nhập'
-                            )}
-                          </Button>
-                        </motion.div>
+                            Bằng việc đăng nhập, bạn đồng ý với Điều khoản và
+                            Chính sách bảo mật
+                          </motion.div>
+                        </div>
 
-                        <motion.div
-                          className="text-center text-sm"
-                          variants={itemVariants}
-                        >
-                          <span className="text-muted-foreground">Chưa có tài khoản? </span>
-                          <button
-                            type="button"
-                            className="font-medium text-orange-700 underline-offset-4 hover:underline"
-                            onClick={() => setViewMode('register')}
-                          >
-                            Đăng ký ngay
-                          </button>
-                        </motion.div>
-
-                        <motion.div
-                          className="text-center text-xs text-muted-foreground"
-                          variants={itemVariants}
-                        >
-                          Bằng việc đăng nhập, bạn đồng ý với Điều khoản và
-                          Chính sách bảo mật
-                        </motion.div>
-                      </div>
-
-                      <DialogFooter className="hidden" />
-                    </form>
+                        <DialogFooter className="hidden" />
+                      </form>
                     )}
 
                     {viewMode === 'register' && (
                       <form onSubmit={handleRegister} className="mt-4">
-                        <div className="grid gap-3 max-h-[500px] overflow-y-auto pr-2">
-                          <motion.div className="grid grid-cols-2 gap-3" variants={itemVariants}>
+                        <div className="grid max-h-[500px] gap-3 overflow-y-auto pr-2">
+                          <motion.div
+                            className="grid grid-cols-2 gap-3"
+                            variants={itemVariants}
+                          >
                             <div className="grid gap-2">
                               <Label htmlFor="firstName">Họ</Label>
                               <Input
                                 id="firstName"
                                 value={registerData.firstName}
-                                onChange={(e) => setRegisterData({ ...registerData, firstName: e.target.value })}
+                                onChange={(e) =>
+                                  setRegisterData({
+                                    ...registerData,
+                                    firstName: e.target.value
+                                  })
+                                }
                                 placeholder="Nguyễn"
                                 disabled={isLoading}
                               />
@@ -607,21 +635,34 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                               <Input
                                 id="lastName"
                                 value={registerData.lastName}
-                                onChange={(e) => setRegisterData({ ...registerData, lastName: e.target.value })}
+                                onChange={(e) =>
+                                  setRegisterData({
+                                    ...registerData,
+                                    lastName: e.target.value
+                                  })
+                                }
                                 placeholder="Văn A"
                                 disabled={isLoading}
                               />
                             </div>
                           </motion.div>
 
-                          <motion.div className="grid gap-2" variants={itemVariants}>
+                          <motion.div
+                            className="grid gap-2"
+                            variants={itemVariants}
+                          >
                             <Label htmlFor="regUserName">Tên đăng nhập *</Label>
                             <div className="relative">
                               <UserIcon className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                               <Input
                                 id="regUserName"
                                 value={registerData.userName}
-                                onChange={(e) => setRegisterData({ ...registerData, userName: e.target.value })}
+                                onChange={(e) =>
+                                  setRegisterData({
+                                    ...registerData,
+                                    userName: e.target.value
+                                  })
+                                }
                                 placeholder="username"
                                 disabled={isLoading}
                                 required
@@ -630,7 +671,10 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                             </div>
                           </motion.div>
 
-                          <motion.div className="grid gap-2" variants={itemVariants}>
+                          <motion.div
+                            className="grid gap-2"
+                            variants={itemVariants}
+                          >
                             <Label htmlFor="email">Email *</Label>
                             <div className="relative">
                               <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -638,7 +682,12 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                                 id="email"
                                 type="email"
                                 value={registerData.email}
-                                onChange={(e) => setRegisterData({ ...registerData, email: e.target.value })}
+                                onChange={(e) =>
+                                  setRegisterData({
+                                    ...registerData,
+                                    email: e.target.value
+                                  })
+                                }
                                 placeholder="email@example.com"
                                 disabled={isLoading}
                                 required
@@ -647,14 +696,22 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                             </div>
                           </motion.div>
 
-                          <motion.div className="grid gap-2" variants={itemVariants}>
+                          <motion.div
+                            className="grid gap-2"
+                            variants={itemVariants}
+                          >
                             <Label htmlFor="phone">Số điện thoại</Label>
                             <div className="relative">
                               <Phone className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                               <Input
                                 id="phone"
                                 value={registerData.phone}
-                                onChange={(e) => setRegisterData({ ...registerData, phone: e.target.value })}
+                                onChange={(e) =>
+                                  setRegisterData({
+                                    ...registerData,
+                                    phone: e.target.value
+                                  })
+                                }
                                 placeholder="0123456789"
                                 disabled={isLoading}
                                 className="pl-9"
@@ -662,9 +719,10 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                             </div>
                           </motion.div>
 
-                        
-
-                          <motion.div className="grid gap-2" variants={itemVariants}>
+                          <motion.div
+                            className="grid gap-2"
+                            variants={itemVariants}
+                          >
                             <Label htmlFor="regPassword">Mật khẩu *</Label>
                             <div className="relative">
                               <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -672,7 +730,12 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                                 id="regPassword"
                                 type={showPassword ? 'text' : 'password'}
                                 value={registerData.passwordHash}
-                                onChange={(e) => setRegisterData({ ...registerData, passwordHash: e.target.value })}
+                                onChange={(e) =>
+                                  setRegisterData({
+                                    ...registerData,
+                                    passwordHash: e.target.value
+                                  })
+                                }
                                 placeholder="Ít nhất 6 ký tự"
                                 disabled={isLoading}
                                 required
@@ -683,20 +746,34 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                                 onClick={() => setShowPassword((v) => !v)}
                                 className="absolute right-2 top-1/2 -translate-y-1/2 rounded-md p-1 text-muted-foreground hover:bg-accent"
                               >
-                                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                                {showPassword ? (
+                                  <EyeOff className="h-4 w-4" />
+                                ) : (
+                                  <Eye className="h-4 w-4" />
+                                )}
                               </button>
                             </div>
                           </motion.div>
 
-                          <motion.div className="grid gap-2" variants={itemVariants}>
-                            <Label htmlFor="confirmPassword">Xác nhận mật khẩu *</Label>
+                          <motion.div
+                            className="grid gap-2"
+                            variants={itemVariants}
+                          >
+                            <Label htmlFor="confirmPassword">
+                              Xác nhận mật khẩu *
+                            </Label>
                             <div className="relative">
                               <Lock className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                               <Input
                                 id="confirmPassword"
                                 type={showPassword ? 'text' : 'password'}
                                 value={registerData.confirmPassword}
-                                onChange={(e) => setRegisterData({ ...registerData, confirmPassword: e.target.value })}
+                                onChange={(e) =>
+                                  setRegisterData({
+                                    ...registerData,
+                                    confirmPassword: e.target.value
+                                  })
+                                }
                                 placeholder="Nhập lại mật khẩu"
                                 disabled={isLoading}
                                 required
@@ -713,9 +790,26 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                             >
                               {isLoading ? (
                                 <span className="inline-flex items-center gap-2">
-                                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path className="opacity-75" d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+                                  <svg
+                                    className="h-4 w-4 animate-spin"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                  >
+                                    <circle
+                                      className="opacity-25"
+                                      cx="12"
+                                      cy="12"
+                                      r="10"
+                                      stroke="currentColor"
+                                      strokeWidth="4"
+                                    />
+                                    <path
+                                      className="opacity-75"
+                                      d="M4 12a8 8 0 018-8"
+                                      stroke="currentColor"
+                                      strokeWidth="4"
+                                      strokeLinecap="round"
+                                    />
                                   </svg>
                                   Đang đăng ký...
                                 </span>
@@ -725,8 +819,13 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                             </Button>
                           </motion.div>
 
-                          <motion.div className="text-center text-sm" variants={itemVariants}>
-                            <span className="text-muted-foreground">Đã có tài khoản? </span>
+                          <motion.div
+                            className="text-center text-sm"
+                            variants={itemVariants}
+                          >
+                            <span className="text-muted-foreground">
+                              Đã có tài khoản?{' '}
+                            </span>
                             <button
                               type="button"
                               className="font-medium text-orange-700 underline-offset-4 hover:underline"
@@ -742,7 +841,10 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                     {viewMode === 'forgot-password' && (
                       <form onSubmit={handleForgotPassword} className="mt-4">
                         <div className="grid gap-4">
-                          <motion.div className="grid gap-2" variants={itemVariants}>
+                          <motion.div
+                            className="grid gap-2"
+                            variants={itemVariants}
+                          >
                             <Label htmlFor="forgotEmail">Email</Label>
                             <div className="relative">
                               <Mail className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
@@ -767,9 +869,26 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                             >
                               {isLoading ? (
                                 <span className="inline-flex items-center gap-2">
-                                  <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
-                                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                                    <path className="opacity-75" d="M4 12a8 8 0 018-8" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
+                                  <svg
+                                    className="h-4 w-4 animate-spin"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                  >
+                                    <circle
+                                      className="opacity-25"
+                                      cx="12"
+                                      cy="12"
+                                      r="10"
+                                      stroke="currentColor"
+                                      strokeWidth="4"
+                                    />
+                                    <path
+                                      className="opacity-75"
+                                      d="M4 12a8 8 0 018-8"
+                                      stroke="currentColor"
+                                      strokeWidth="4"
+                                      strokeLinecap="round"
+                                    />
                                   </svg>
                                   Đang gửi...
                                 </span>
@@ -779,7 +898,10 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
                             </Button>
                           </motion.div>
 
-                          <motion.div className="text-center text-sm" variants={itemVariants}>
+                          <motion.div
+                            className="text-center text-sm"
+                            variants={itemVariants}
+                          >
                             <button
                               type="button"
                               className="font-medium text-orange-700 underline-offset-4 hover:underline"
@@ -798,11 +920,13 @@ export default function LoginDialog({ open, onOpenChange }: LoginDialogProps) {
           )}
         </AnimatePresence>
       </DialogContent>
-      
+
       {/* Account Status Dialog */}
       <AccountStatusDialog
         open={accountStatusDialog.open}
-        onOpenChange={(open) => setAccountStatusDialog(prev => ({ ...prev, open }))}
+        onOpenChange={(open) =>
+          setAccountStatusDialog((prev) => ({ ...prev, open }))
+        }
         status={accountStatusDialog.status}
         email={accountStatusDialog.email}
       />

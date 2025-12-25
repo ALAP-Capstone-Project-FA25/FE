@@ -28,7 +28,6 @@ import {
   X,
   Book,
   CheckCircle2,
-  Lock,
   Clock,
   TrendingUp,
   AlertCircle,
@@ -318,6 +317,10 @@ const KnowledgeNode = ({
         return 'bg-gradient-to-br from-orange-50 to-orange-100 border-orange-500';
       case 'theoretical':
         return 'bg-gradient-to-br from-cyan-50 to-cyan-100 border-cyan-500';
+      case 'topic':
+        return 'bg-gradient-to-br from-lime-50 to-lime-100 border-lime-500';
+      case 'knowledge':
+        return 'bg-gradient-to-br from-blue-50 to-blue-100 border-blue-500';
       default:
         // Custom categories - use a default style
         return 'bg-gradient-to-br from-slate-50 to-slate-100 border-slate-500';
@@ -363,7 +366,9 @@ const KnowledgeNode = ({
       beginner: 'Người mới',
       specialized: 'Chuyên ngành',
       practical: 'Thực hành',
-      theoretical: 'Lý thuyết'
+      theoretical: 'Lý thuyết',
+      topic: 'Chủ đề',
+      knowledge: 'Kiến thức'
     };
 
     return categoryLabels[data.category] || data.category;
@@ -539,7 +544,9 @@ const NodeEditorDialog = ({
       'beginner',
       'specialized',
       'practical',
-      'theoretical'
+      'theoretical',
+      'topic',
+      'knowledge'
     ];
     const isCustom = !predefinedCategories.includes(formData.category);
     setIsCustomCategory(isCustom);
@@ -723,6 +730,8 @@ const NodeEditorDialog = ({
                 <option value="specialized">🔬 Chuyên ngành</option>
                 <option value="practical">🛠️ Thực hành</option>
                 <option value="theoretical">📚 Lý thuyết</option>
+                <option value="topic">📌 Chủ đề</option>
+                <option value="knowledge">📖 Kiến thức</option>
                 <option value="custom">✏️ Tùy chỉnh</option>
               </select>
             </div>
@@ -1303,7 +1312,12 @@ const KnowledgeDetailDialog = ({
         color: 'bg-orange-100 text-orange-800',
         label: '🛠️ Thực hành'
       },
-      theoretical: { color: 'bg-cyan-100 text-cyan-800', label: '📚 Lý thuyết' }
+      theoretical: {
+        color: 'bg-cyan-100 text-cyan-800',
+        label: '📚 Lý thuyết'
+      },
+      topic: { color: 'bg-lime-100 text-lime-800', label: '📌 Chủ đề' },
+      knowledge: { color: 'bg-blue-100 text-blue-800', label: '📖 Kiến thức' }
     };
 
     const badge = badges[node.data.category];
@@ -2534,7 +2548,9 @@ const KnowledgeGraphEditor = () => {
                   beginner: '#22c55e',
                   specialized: '#6366f1',
                   practical: '#f97316',
-                  theoretical: '#06b6d4'
+                  theoretical: '#06b6d4',
+                  topic: '#84cc16',
+                  knowledge: '#2563eb'
                 };
                 return colors[data.category] || '#6b7280';
               }}
@@ -2542,133 +2558,6 @@ const KnowledgeGraphEditor = () => {
             />
           </ReactFlow>
         )}
-      </div>
-
-      {/* Legend */}
-      <div className="absolute bottom-6 left-6 z-10 max-w-sm rounded-2xl border border-slate-200/50 bg-white/90 p-5 shadow-xl backdrop-blur-xl">
-        <h3 className="mb-4 text-lg font-bold text-slate-800">📚 Chú giải</h3>
-
-        <div className="mb-4">
-          <h4 className="mb-2 text-sm font-semibold text-slate-600">
-            Phân loại:
-          </h4>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-md bg-gradient-to-br from-sky-400 to-sky-600" />
-              <span>Nền tảng</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-md bg-gradient-to-br from-violet-400 to-violet-600" />
-              <span>Cốt lõi</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-md bg-gradient-to-br from-rose-400 to-rose-600" />
-              <span>Nâng cao</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-md bg-gradient-to-br from-emerald-400 to-emerald-600" />
-              <span>Khuyên học</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-md bg-gradient-to-br from-amber-400 to-amber-600" />
-              <span>Trung cấp</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-md bg-gradient-to-br from-purple-400 to-purple-600" />
-              <span>Chuyên sâu</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-md bg-gradient-to-br from-green-400 to-green-600" />
-              <span>Người mới</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-md bg-gradient-to-br from-indigo-400 to-indigo-600" />
-              <span>Chuyên ngành</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-md bg-gradient-to-br from-orange-400 to-orange-600" />
-              <span>Thực hành</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-md bg-gradient-to-br from-cyan-400 to-cyan-600" />
-              <span>Lý thuyết</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-4 w-4 rounded-md bg-gradient-to-br from-slate-400 to-slate-600" />
-              <span>Tùy chỉnh</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="mb-4 border-t border-slate-200 pt-3">
-          <h4 className="mb-2 text-sm font-semibold text-slate-600">
-            Liên kết:
-          </h4>
-          <div className="space-y-2 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="h-0.5 w-8 bg-sky-600" />
-              <span>→ Bắt buộc</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="h-0.5 w-8 border-t-2 border-dashed border-emerald-600" />
-              <span>⤏ Khuyên học</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="border-t border-slate-200 pt-3">
-          <h4 className="mb-2 text-sm font-semibold text-slate-600">
-            Trạng thái:
-          </h4>
-          <div className="grid grid-cols-2 gap-2 text-sm">
-            <div className="flex items-center gap-2">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-              <span>Hoàn thành</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <TrendingUp className="h-4 w-4 text-sky-600" />
-              <span>Đang học</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Book className="h-4 w-4 text-violet-600" />
-              <span>Sẵn sàng</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <Lock className="h-4 w-4 text-slate-400" />
-              <span>Khóa</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Stats Panel */}
-      <div className="absolute bottom-6 right-6 z-10 rounded-2xl border border-slate-200/50 bg-white/90 p-5 shadow-xl backdrop-blur-xl">
-        <h3 className="mb-3 font-bold text-slate-800">📊 Thống kê</h3>
-        <div className="space-y-2 text-sm">
-          <div className="flex justify-between gap-6">
-            <span className="text-slate-500">Hoàn thành:</span>
-            <span className="font-bold text-emerald-600">
-              {nodes.filter((n) => n.data.status === 'completed').length} /{' '}
-              {nodes.length}
-            </span>
-          </div>
-          <div className="flex justify-between gap-6">
-            <span className="text-slate-500">Đang học:</span>
-            <span className="font-bold text-sky-600">
-              {nodes.filter((n) => n.data.status === 'in-progress').length}
-            </span>
-          </div>
-          <div className="flex justify-between gap-6">
-            <span className="text-slate-500">Sẵn sàng:</span>
-            <span className="font-bold text-violet-600">
-              {nodes.filter((n) => n.data.status === 'available').length}
-            </span>
-          </div>
-          <div className="flex justify-between gap-6 border-t border-slate-200 pt-2">
-            <span className="text-slate-500">Kết nối:</span>
-            <span className="font-bold text-slate-700">{edges.length}</span>
-          </div>
-        </div>
       </div>
 
       {/* Dialogs */}

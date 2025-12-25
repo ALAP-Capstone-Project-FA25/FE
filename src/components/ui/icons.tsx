@@ -50,7 +50,9 @@ import {
   BookOpen,
   Network,
   Mic,
-  StickyNote
+  StickyNote,
+  BookOpenCheck,
+  Book
 } from 'lucide-react';
 
 export type Icon = LucideIcon;
@@ -60,6 +62,8 @@ export const Icons = {
   syringe: Syringe, // Tiêm chủng
   list: ListOrdered,
   dog: Dog, // Vật nuôi
+  book: Book,
+  bookOpenCheck: BookOpenCheck,
   stickyNote: StickyNote,
   network: Network, // Mạng lưới
   mic: Mic, // Speaker

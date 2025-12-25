@@ -23,7 +23,9 @@ export default function VideoSection({
   setShowResults,
   calculateScore,
   resetQuiz,
-  exitQuiz
+  exitQuiz,
+  onQuizCompleted,
+  onNavigateToNextLesson
 }: {
   currentLesson: Lesson | null;
   currentQuiz: QuizItem | null;
@@ -53,6 +55,8 @@ export default function VideoSection({
   };
   resetQuiz: () => void;
   exitQuiz: () => void;
+  onQuizCompleted?: (topicId: number) => void;
+  onNavigateToNextLesson?: () => void;
 }) {
   return (
     <div className="relative flex flex-1 items-center justify-center bg-gradient-to-br from-gray-800 to-gray-900">
@@ -72,6 +76,8 @@ export default function VideoSection({
           calculateScore={calculateScore}
           resetQuiz={resetQuiz}
           exitQuiz={exitQuiz}
+          onQuizCompleted={onQuizCompleted}
+          onNavigateToNextLesson={onNavigateToNextLesson}
         />
       ) : currentLesson && currentLesson.videoUrl ? (
         <div className="h-full w-full">

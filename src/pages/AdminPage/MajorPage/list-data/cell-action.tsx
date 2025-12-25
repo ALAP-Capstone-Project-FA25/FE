@@ -40,11 +40,14 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
   const [showDeleteDialog, setShowDeleteDialog] = useState(false);
   const [showEditDialog, setShowEditDialog] = useState(false);
   const [editName, setEditName] = useState(data.name);
-  const [editDescription, setEditDescription] = useState(data.description || '');
+  const [editDescription, setEditDescription] = useState(
+    data.description || ''
+  );
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { mutateAsync: deleteMajor, isPending: isDeleting } = useDeleteMajor();
-  const { mutateAsync: updateMajor, isPending: isUpdating } = useCreateUpdateMajor();
+  const { mutateAsync: updateMajor, isPending: isUpdating } =
+    useCreateUpdateMajor();
 
   const handleDelete = async () => {
     try {
@@ -53,13 +56,13 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       if (err) {
         toast({
           title: 'Lỗi',
-          description: err.message || 'Không thể xóa chuyên ngành',
+          description: err.message || 'Không thể xóa nhóm môn học',
           variant: 'destructive'
         });
       } else {
         toast({
           title: 'Thành công!',
-          description: 'Chuyên ngành đã được xóa',
+          description: 'Nhóm môn học đã được xóa',
           variant: 'default'
         });
         queryClient.invalidateQueries({ queryKey: ['majors'] });
@@ -85,13 +88,13 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
       if (err) {
         toast({
           title: 'Lỗi',
-          description: err.message || 'Không thể cập nhật chuyên ngành',
+          description: err.message || 'Không thể cập nhật nhóm môn học',
           variant: 'destructive'
         });
       } else {
         toast({
           title: 'Thành công!',
-          description: 'Chuyên ngành đã được cập nhật',
+          description: 'Nhóm môn học đã được cập nhật',
           variant: 'default'
         });
         queryClient.invalidateQueries({ queryKey: ['majors'] });
@@ -131,18 +134,18 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
 
       {/* Edit Dialog */}
       <Dialog open={showEditDialog} onOpenChange={setShowEditDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-3xl">
           <DialogHeader>
-            <DialogTitle>Chỉnh sửa chuyên ngành</DialogTitle>
+            <DialogTitle>Chỉnh sửa nhóm môn học</DialogTitle>
           </DialogHeader>
           <div className="space-y-4 py-4">
             <div className="space-y-2">
-              <Label htmlFor="edit-name">Tên chuyên ngành</Label>
+              <Label htmlFor="edit-name">Tên nhóm môn học</Label>
               <Input
                 id="edit-name"
                 value={editName}
                 onChange={(e) => setEditName(e.target.value)}
-                placeholder="Tên chuyên ngành..."
+                placeholder="Tên nhóm môn học..."
               />
             </div>
             <div className="space-y-2">
@@ -151,7 +154,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
                 id="edit-description"
                 value={editDescription}
                 onChange={(e) => setEditDescription(e.target.value)}
-                placeholder="Mô tả chuyên ngành..."
+                placeholder="Mô tả nhóm môn học..."
                 rows={4}
               />
             </div>
@@ -177,7 +180,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
           <AlertDialogHeader>
             <AlertDialogTitle>Bạn có chắc chắn?</AlertDialogTitle>
             <AlertDialogDescription>
-              Hành động này không thể hoàn tác. Chuyên ngành "{data.name}" sẽ bị
+              Hành động này không thể hoàn tác. Nhóm môn học "{data.name}" sẽ bị
               xóa vĩnh viễn.
             </AlertDialogDescription>
           </AlertDialogHeader>

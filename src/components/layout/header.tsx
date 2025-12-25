@@ -188,7 +188,7 @@ export default function Header() {
                 AP
               </div>
               <span className="font-semibold text-gray-800">
-                A LEVEL ADAPTIVE LERNING
+                A LEVEL ADAPTIVE LEARNING
               </span>
             </div>
 
@@ -217,7 +217,7 @@ export default function Header() {
                       router.push('/pick-major');
                     }}
                   >
-                    Chọn chuyên ngành
+                    Chọn nhóm môn
                   </p>
                 )
               )}
@@ -269,7 +269,7 @@ export default function Header() {
                       <div
                         className="flex cursor-pointer items-center gap-2 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
                         onClick={() => {
-                          router.push('/user-profile');
+                          router.push('/my-profile');
                           setUserDropdownOpen(false);
                         }}
                       >

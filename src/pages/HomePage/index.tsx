@@ -17,30 +17,47 @@ import {
   SelectValue
 } from '@/components/ui/select';
 
+// Bắt đầu A-Level từ con số 0
+// Nền tảng hỗ trợ học sinh Việt Nam làm quen với hệ thống A-Level quốc tế một cách dễ hiểu và có lộ trình.
+
+// Hiểu đúng A-Level trước khi học sâu
+// Giải thích cấu trúc AS – A2, môn học, kỳ thi và cách lựa chọn phù hợp ngay từ đầu.
+
+// Học A-Level theo lộ trình rõ ràng
+// Nội dung được thiết kế từ cơ bản đến nâng cao, giúp người mới không bị “choáng” khi tiếp cận chương trình.
+
+// Tài nguyên chuẩn – Học tập có định hướng
+// Video, tài liệu và bài học được chọn lọc nhằm hỗ trợ quá trình làm quen và xây nền tảng vững chắc.
+
+// Cầu nối từ học sinh Việt Nam đến A-Level quốc tế
+// Đồng hành cùng người học trong giai đoạn định hướng, chuẩn bị và phát triển tư duy học thuật.
+
 const heroSlides = [
   {
     id: 1,
-    title: 'AP Computer Science A – Luyện thi chuẩn College Board',
+    title: 'Bắt đầu A-Level từ con số 0',
     description:
-      'Khoá học giúp học sinh nắm vững Java, OOP, thuật toán và dạng bài chính thức. Chuẩn bị tự tin cho kỳ thi AP với hệ thống bài tập bám sát đề thật.',
+      'Nền tảng hỗ trợ học sinh Việt Nam làm quen với hệ thống A-Level quốc tế một cách dễ hiểu và có lộ trình.',
     // oldPrice: '9.999K',
     // newPrice: '6.499K',
     gradient: 'from-blue-600 via-sky-600 to-indigo-700',
-    note1: 'Tặng bộ đề AP CS A chính thống (2020–2024)',
-    note2: 'Kèm theo 20 buổi luyện giải cùng giáo viên',
+    note1: 'Hiểu đúng A-Level trước khi học sâu',
+    note2:
+      'Giải thích cấu trúc AS – A2, môn học, kỳ thi và cách lựa chọn phù hợp ngay từ đầu.',
     accent: 'from-orange-400 to-orange-600',
     buttonText: 'ĐĂNG KÝ HỌC THỬ'
   },
 
   {
     id: 2,
-    title: 'AP Calculus AB/BC – Nắm chắc kiến thức & tăng điểm nhanh ',
+    title: 'Hiểu đúng A-Level trước khi học sâu',
     description:
-      'Giúp học sinh hiểu sâu về giới hạn, đạo hàm, tích phân và ứng dụng. Khóa luyện đề nâng cao đảm bảo kỹ năng giải nhanh và chính xác.',
+      'Giải thích cấu trúc AS – A2, môn học, kỳ thi và cách lựa chọn phù hợp ngay từ đầu.',
     // oldPrice: '12.499K',
     // newPrice: '7.899K',
-    note1: 'Tặng bộ flashcard 500+ công thức AP Calculus',
-    note2: 'Cam kết hoàn phí nếu không tăng điểm',
+    note1: 'Học A-Level theo lộ trình rõ ràng',
+    note2:
+      'Nội dung được thiết kế từ cơ bản đến nâng cao, giúp người mới không bị “choáng” khi tiếp cận chương trình.',
     gradient: 'from-purple-600 via-purple-700 to-purple-900',
     accent: 'from-emerald-400 to-teal-500',
     buttonText: 'XEM CHI TIẾT LỘ TRÌNH'
@@ -48,13 +65,14 @@ const heroSlides = [
 
   {
     id: 3,
-    title: 'AP Physics 1/2 – Tư duy vật lý và giải bài nâng cao ⚡',
+    title: 'Tài nguyên chuẩn – Học tập có định hướng',
     description:
-      'Khóa học tập trung vào các chủ đề quan trọng: động lực học, điện từ học, sóng, năng lượng và bài tập FRQ. Lý thuyết ngắn gọn – bài tập theo cấp độ.',
+      'Video, tài liệu và bài học được chọn lọc nhằm hỗ trợ quá trình làm quen và xây nền tảng vững chắc.',
     // oldPrice: '11.999K',
     // newPrice: '7.499K',
-    note1: 'Tặng bộ ngân hàng 300+ FRQ & MCQ chuẩn AP',
-    note2: 'Giáo viên 8.0+ A-Level & AP Master hướng dẫn',
+    note1: 'Cầu nối từ học sinh Việt Nam đến A-Level quốc tế',
+    note2:
+      'Đồng hành cùng người học trong giai đoạn định hướng, chuẩn bị và phát triển tư duy học thuật.',
     gradient: 'from-rose-500 via-pink-600 to-fuchsia-700',
     accent: 'from-yellow-400 to-orange-500',
     buttonText: 'THAM GIA NGAY'

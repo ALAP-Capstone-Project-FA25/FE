@@ -32,7 +32,7 @@ export default function HeaderBar({
       <div className="flex items-center gap-6">
         <div className="flex items-center gap-2 text-sm">
           <span className="rounded-full bg-blue-600 px-3 py-1 text-xs font-semibold text-white">
-            {percentWatched}%
+            {percentWatched.toFixed(0)}%
           </span>
           <span className="text-gray-300">
             {currentLessonTitle ? `Đang học: ${currentLessonTitle}` : '—'}

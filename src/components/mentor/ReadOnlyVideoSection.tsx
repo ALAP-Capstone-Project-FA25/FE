@@ -1,6 +1,6 @@
-import { useRef } from 'react';
+import { useRef, useMemo, useCallback, useEffect } from 'react';
 import YouTube, { YouTubeProps } from 'react-youtube';
-import { Play, Pause, Eye, EyeOff, Wifi, WifiOff } from 'lucide-react';
+import { Play, Pause, Eye } from 'lucide-react';
 import { Lesson, QuizItem, Topic } from '@/pages/LearningPage/types';
 import { Badge } from '@/components/ui/badge';
 import { useGetStudentVideoProgress } from '@/queries/mentor.query';
@@ -28,12 +28,12 @@ export default function ReadOnlyVideoSection({
 
   // Get student's video progress (initial load)
   const { data: initialVideoProgress } = useGetStudentVideoProgress(
-    studentId, 
+    studentId,
     currentLesson?.id || 0
   );
 
   // Real-time video tracking
-  const { videoProgress: realtimeProgress, isConnected } = useStudentVideoTracking(
+  const { videoProgress: realtimeProgress } = useStudentVideoTracking(
     studentId,
     currentLesson?.id || 0
   );
@@ -41,23 +41,64 @@ export default function ReadOnlyVideoSection({
   // Use real-time progress if available, otherwise fall back to initial data
   const videoProgress = realtimeProgress || initialVideoProgress;
 
-  const handlePlayerReady: YouTubeProps['onReady'] = (event) => {
-    playerRef.current = event.target;
-    
-    // Call parent callback with player reference
-    if (onPlayerReady) {
-      onPlayerReady(event.target);
-    }
-    
-    // Seek to student's current position if available
-    if (videoProgress?.CurrentTime) {
-      event.target.seekTo(videoProgress.CurrentTime, true);
-    }
-  };
+  // Memoize player options to avoid re-renders
+  const playerOpts = useMemo(
+    () => ({
+      width: '100%',
+      height: '100%',
+      playerVars: {
+        autoplay: 0,
+        controls: 1,
+        disablekb: 0,
+        fs: 1,
+        modestbranding: 1,
+        rel: 0,
+        showinfo: 0
+      }
+    }),
+    []
+  );
 
-  const onStateChange: YouTubeProps['onStateChange'] = () => {
+  const handlePlayerReady: YouTubeProps['onReady'] = useCallback(
+    (event) => {
+      playerRef.current = event.target;
+
+      // Call parent callback with player reference
+      if (onPlayerReady) {
+        onPlayerReady(event.target);
+      }
+
+      // Seek to student's current position if available
+      if (videoProgress?.CurrentTime) {
+        event.target.seekTo(videoProgress.CurrentTime, true);
+      }
+    },
+    [onPlayerReady, videoProgress?.CurrentTime]
+  );
+
+  const onStateChange: YouTubeProps['onStateChange'] = useCallback(() => {
     // Read-only mode - no state changes needed
-  };
+  }, []);
+
+  // Update player position when videoProgress changes (for real-time updates)
+  useEffect(() => {
+    if (playerRef.current && videoProgress?.CurrentTime) {
+      // Only seek if the difference is significant (more than 2 seconds)
+      const currentTime = playerRef.current.getCurrentTime();
+      if (Math.abs(currentTime - videoProgress.CurrentTime) > 2) {
+        playerRef.current.seekTo(videoProgress.CurrentTime, true);
+      }
+    }
+  }, [videoProgress?.CurrentTime]);
+
+  // Memoize watched ranges to avoid re-renders
+  const watchedRanges = useMemo(() => {
+    if (!videoProgress?.WatchedRanges) return [];
+    return videoProgress.WatchedRanges.map(([start, end]) => ({
+      start,
+      end
+    }));
+  }, [videoProgress?.WatchedRanges]);
 
   // Render quiz panel for read-only view
   if (currentQuiz && topicForQuiz) {
@@ -85,35 +126,11 @@ export default function ReadOnlyVideoSection({
     return (
       <div className="relative h-full bg-black">
         {/* Read-only indicator with connection status */}
-        <div className="absolute top-4 left-4 z-10 flex gap-2">
-          <Badge variant="secondary" className="bg-black/70 text-white border-gray-600">
-            <EyeOff className="mr-1 h-3 w-3" />
-            Chế độ xem mentor
-          </Badge>
-          
-          <Badge 
-            variant="secondary" 
-            className={`bg-black/70 border-gray-600 ${
-              isConnected ? 'text-green-400' : 'text-red-400'
-            }`}
-          >
-            {isConnected ? (
-              <>
-                <Wifi className="mr-1 h-3 w-3" />
-                Theo dõi trực tiếp
-              </>
-            ) : (
-              <>
-                <WifiOff className="mr-1 h-3 w-3" />
-                Mất kết nối
-              </>
-            )}
-          </Badge>
-        </div>
+        <div className="absolute left-4 top-4 z-10 flex gap-2"></div>
 
         {/* Student progress indicator */}
         {videoProgress && (
-          <div className="absolute top-4 right-4 z-10">
+          <div className="absolute right-4 top-4 z-10">
             <div className="rounded-lg bg-black/70 p-2 text-white">
               <div className="flex items-center gap-2 text-xs">
                 <div className="flex items-center gap-1">
@@ -124,22 +141,30 @@ export default function ReadOnlyVideoSection({
                   )}
                   <span>
                     {Math.floor(videoProgress.CurrentTime / 60)}:
-                    {String(Math.floor(videoProgress.CurrentTime % 60)).padStart(2, '0')}
+                    {String(
+                      Math.floor(videoProgress.CurrentTime % 60)
+                    ).padStart(2, '0')}
                   </span>
                 </div>
                 <span>/</span>
                 <span>
                   {Math.floor(videoProgress.TotalDuration / 60)}:
-                  {String(Math.floor(videoProgress.TotalDuration % 60)).padStart(2, '0')}
+                  {String(
+                    Math.floor(videoProgress.TotalDuration % 60)
+                  ).padStart(2, '0')}
                 </span>
               </div>
-              <div className="mt-1 h-1 w-32 bg-gray-600 rounded-full overflow-hidden">
-                <div 
+              <div className="mt-1 h-1 w-32 overflow-hidden rounded-full bg-gray-600">
+                <div
                   className="h-full bg-blue-500 transition-all duration-300"
-                  style={{ 
-                    width: `${videoProgress.TotalDuration > 0 
-                      ? (videoProgress.WatchedDuration / videoProgress.TotalDuration) * 100 
-                      : 0}%` 
+                  style={{
+                    width: `${
+                      videoProgress.TotalDuration > 0
+                        ? (videoProgress.WatchedDuration /
+                            videoProgress.TotalDuration) *
+                          100
+                        : 0
+                    }%`
                   }}
                 />
               </div>
@@ -148,42 +173,26 @@ export default function ReadOnlyVideoSection({
         )}
 
         <YouTube
+          key={videoId} // Force re-mount when videoId changes
           videoId={videoId}
           onReady={handlePlayerReady}
           onStateChange={onStateChange}
-          opts={{
-            width: '100%',
-            height: '100%',
-            playerVars: {
-              autoplay: 0,
-              controls: 1, // Enable basic controls for mentor
-              disablekb: 0, // Allow keyboard controls
-              fs: 1, // Allow fullscreen
-              modestbranding: 1,
-              rel: 0,
-              showinfo: 0,
-            },
-          }}
+          opts={playerOpts}
           className="h-full w-full"
         />
 
         {/* Watched ranges visualization */}
-        {videoProgress && videoProgress.WatchedRanges && (
+        {videoProgress && watchedRanges.length > 0 && (
           <div className="absolute bottom-4 left-4 right-4 z-10">
             <div className="rounded-lg bg-black/80 p-3">
               <WatchedRangesVisualization
-                watchedRanges={videoProgress.WatchedRanges.map(([start, end]) => ({
-                  start,
-                  end
-                }))}
+                watchedRanges={watchedRanges}
                 totalDuration={videoProgress.TotalDuration}
                 currentTime={videoProgress.CurrentTime}
               />
             </div>
           </div>
         )}
-
-
       </div>
     );
   }

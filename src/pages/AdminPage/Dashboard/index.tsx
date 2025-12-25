@@ -37,7 +37,7 @@ import {
   useGetRevenueChart,
   useGetStudentGrowthChart,
   useGetCourseDistribution,
-  useGetTopCourses,
+  useGetTopCourses
 } from '@/queries/dashboard.query';
 import { useGetUsersByPagingByRole } from '@/queries/user.query';
 import { USER_ROLE } from '@/constants/data';
@@ -62,14 +62,23 @@ const CourseDashboard = () => {
   const [selectedPeriod, setSelectedPeriod] = useState('month');
 
   // API Queries
-  const { data: dashboardStats, isLoading: isLoadingStats } = useGetDashboardStats();
-  const { data: revenueChart, isLoading: isLoadingRevenue } = useGetRevenueChart(selectedPeriod);
-  const { data: studentGrowth, isLoading: isLoadingStudents } = useGetStudentGrowthChart();
-  const { data: courseDistribution, isLoading: isLoadingDistribution } = useGetCourseDistribution();
+  const { data: dashboardStats, isLoading: isLoadingStats } =
+    useGetDashboardStats();
+  const { data: revenueChart, isLoading: isLoadingRevenue } =
+    useGetRevenueChart(selectedPeriod);
+  const { data: studentGrowth, isLoading: isLoadingStudents } =
+    useGetStudentGrowthChart();
+  const { data: courseDistribution, isLoading: isLoadingDistribution } =
+    useGetCourseDistribution();
   const { data: topCourses } = useGetTopCourses();
-  
+
   // Account stats queries
-  const { data: studentsData } = useGetUsersByPagingByRole(1, 1000, '', USER_ROLE.USER);
+  const { data: studentsData } = useGetUsersByPagingByRole(
+    1,
+    1000,
+    '',
+    USER_ROLE.USER
+  );
   const { data: mentorsData } = useGetUsersByPagingByRole(1, 1000, '', 3); // Mentor role = 3
   const { data: adminsData } = useGetUsersByPagingByRole(1, 1000, '', 1); // Admin role = 1
 
@@ -238,11 +247,11 @@ const CourseDashboard = () => {
   };
 
   const performanceChartData = {
-    labels: topCourses?.map(course => course.title) || [],
+    labels: topCourses?.map((course) => course.title) || [],
     datasets: [
       {
         label: 'Tỷ lệ hoàn thành (%)',
-        data: topCourses?.map(course => course.completionRate) || [],
+        data: topCourses?.map((course) => course.completionRate) || [],
         backgroundColor: [
           'rgba(249, 115, 22, 0.9)',
           'rgba(59, 130, 246, 0.9)',
@@ -304,12 +313,12 @@ const CourseDashboard = () => {
   // Calculate account stats
   const calculateAccountStats = (users: any[]) => {
     if (!users) return { total: 0, active: 0, banned: 0, unverified: 0 };
-    
+
     const total = users.length;
-    const active = users.filter(u => u.isActive === true).length;
-    const banned = users.filter(u => u.isActive === false).length;
-    const unverified = users.filter(u => u.emailConfirmed === false).length;
-    
+    const active = users.filter((u) => u.isActive === true).length;
+    const banned = users.filter((u) => u.isActive === false).length;
+    const unverified = users.filter((u) => u.emailConfirmed === false).length;
+
     return { total, active, banned, unverified };
   };
 
@@ -353,12 +362,13 @@ const CourseDashboard = () => {
     }
   ];
 
-  
-
- 
-
   // Loading state
-  if (isLoadingStats || isLoadingRevenue || isLoadingStudents || isLoadingDistribution) {
+  if (
+    isLoadingStats ||
+    isLoadingRevenue ||
+    isLoadingStudents ||
+    isLoadingDistribution
+  ) {
     return (
       <BasePages
         className="relative flex-1 space-y-4 overflow-y-auto px-4"
@@ -383,22 +393,10 @@ const CourseDashboard = () => {
         {/* Header Actions */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-bold text-gray-900">Tổng quan hệ thống</h2>
+            <h2 className="text-2xl font-bold text-gray-900">
+              Tổng quan hệ thống
+            </h2>
             <p className="text-gray-600">Thống kê và báo cáo tổng quan</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              size="sm"
-              className="border-gray-200 hover:bg-orange-50"
-            >
-              <Calendar className="mr-2 h-4 w-4" />
-              Lịch học
-            </Button>
-            <Button className="bg-gradient-to-r from-orange-500 to-orange-600 text-white shadow-lg hover:from-orange-600 hover:to-orange-700">
-              <Plus className="mr-2 h-4 w-4" />
-              Tạo khóa học
-            </Button>
           </div>
         </div>
 
@@ -452,8 +450,14 @@ const CourseDashboard = () => {
         {/* Account Stats Section */}
         <div className="space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Thống kê tài khoản</h3>
-            <Button variant="outline" size="sm" className="text-orange-600 border-orange-200 hover:bg-orange-50">
+            <h3 className="text-lg font-semibold text-gray-900">
+              Thống kê tài khoản
+            </h3>
+            <Button
+              variant="outline"
+              size="sm"
+              className="border-orange-200 text-orange-600 hover:bg-orange-50"
+            >
               Xem chi tiết
             </Button>
           </div>
@@ -585,9 +589,6 @@ const CourseDashboard = () => {
             </CardContent>
           </Card>
         </div>
-
-        
-    
       </div>
     </BasePages>
   );

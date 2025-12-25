@@ -67,7 +67,9 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
     data.description || ''
   );
   const [editImageUrl, setEditImageUrl] = useState(data.imageUrl || '');
-  const [editMajorId, setEditMajorId] = useState(data.majorId?.toString() || '');
+  const [editMajorId, setEditMajorId] = useState(
+    data.majorId?.toString() || ''
+  );
 
   // Reset form khi mở dialog
   useEffect(() => {
@@ -222,16 +224,6 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
                       <p className="line-clamp-2 text-sm text-gray-600">
                         {course.description}
                       </p>
-                      <div className="mt-2 flex gap-2">
-                        <span className="text-xs text-gray-500">
-                          Giá: {course.price.toLocaleString()}đ
-                        </span>
-                        {course.salePrice > 0 && (
-                          <span className="text-xs font-semibold text-green-600">
-                            Sale: {course.salePrice.toLocaleString()}đ
-                          </span>
-                        )}
-                      </div>
                     </div>
                     {course.imageUrl && (
                       <img

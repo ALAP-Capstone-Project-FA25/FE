@@ -8,13 +8,13 @@ export default function MajorPage() {
     <>
       <BasePages
         className="relative flex-1 space-y-4 overflow-y-auto px-4"
-        pageHead="Quản lý chuyên ngành"
-        breadcrumbs={[{ title: 'Quản lý chuyên ngành', link: '/admin/majors' }]}
+        pageHead="Quản lý nhóm môn học"
+        breadcrumbs={[{ title: 'Quản lý nhóm môn học', link: '/admin/majors' }]}
       >
         <Tabs defaultValue="overview" className="space-y-4">
           <TabsList>
-            <TabsTrigger value="overview">Danh sách chuyên ngành</TabsTrigger>
-            <TabsTrigger value="add">Thêm chuyên ngành</TabsTrigger>
+            <TabsTrigger value="overview">Danh sách nhóm môn học</TabsTrigger>
+            <TabsTrigger value="add">Thêm nhóm môn học</TabsTrigger>
           </TabsList>
           <TabsContent value="overview" className="space-y-4">
             <OverViewTab />

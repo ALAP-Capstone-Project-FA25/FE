@@ -25,14 +25,16 @@ export default function EntryTestList() {
 
   if (isPending) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0F172A] via-[#1E293B] to-[#0F172A] flex justify-center items-center">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-[#0F172A] via-[#1E293B] to-[#0F172A]">
         <div className="text-center">
           <div className="mb-4 flex justify-center">
             <div className="rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 p-4 shadow-2xl">
               <Loader2 className="h-12 w-12 animate-spin text-white" />
             </div>
           </div>
-          <p className="text-lg text-gray-400">Đang tải danh sách bài test...</p>
+          <p className="text-lg text-gray-400">
+            Đang tải danh sách bài test...
+          </p>
         </div>
       </div>
     );
@@ -40,7 +42,7 @@ export default function EntryTestList() {
 
   if (tests.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-b from-[#0F172A] via-[#1E293B] to-[#0F172A] flex justify-center items-center px-4">
+      <div className="flex min-h-screen items-center justify-center bg-gradient-to-b from-[#0F172A] via-[#1E293B] to-[#0F172A] px-4">
         {/* Background Effects */}
         <div className="pointer-events-none fixed inset-0 overflow-hidden">
           <div
@@ -56,16 +58,19 @@ export default function EntryTestList() {
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="relative z-10 max-w-md w-full rounded-3xl border border-white/10 bg-white/5 p-8 backdrop-blur-sm text-center"
+          className="relative z-10 w-full max-w-md rounded-3xl border border-white/10 bg-white/5 p-8 text-center backdrop-blur-sm"
         >
           <div className="mb-6 flex justify-center">
             <div className="rounded-2xl bg-gradient-to-br from-orange-500 to-orange-600 p-4 shadow-2xl">
               <FileText className="h-12 w-12 text-white" />
             </div>
           </div>
-          <h2 className="text-2xl font-bold text-white mb-3">Chưa có bài test nào</h2>
-          <p className="text-gray-400 mb-6">
-            Hiện tại chưa có bài test đầu vào nào đang hoạt động. Vui lòng quay lại sau.
+          <h2 className="mb-3 text-2xl font-bold text-white">
+            Chưa có bài test nào
+          </h2>
+          <p className="mb-6 text-gray-400">
+            Hiện tại chưa có bài test đầu vào nào đang hoạt động. Vui lòng quay
+            lại sau.
           </p>
           <Button
             onClick={() => navigate('/')}
@@ -128,7 +133,7 @@ export default function EntryTestList() {
               className="group flex items-center gap-2 rounded-xl border-2 border-white/20 bg-white/10 px-4 py-2 font-semibold text-white backdrop-blur-sm hover:border-orange-500/50 hover:bg-white/20"
             >
               <ChevronLeft className="h-5 w-5 transition-transform group-hover:-translate-x-1" />
-              Quay lại chọn ngành
+              Quay lại chọn nhóm môn
             </Button>
           </motion.div>
 
@@ -138,12 +143,10 @@ export default function EntryTestList() {
             animate={{ opacity: 1, y: 0 }}
             className="mb-12 text-center"
           >
-
             <h1 className="mb-4 text-4xl font-bold text-white lg:text-5xl">
               Bài Test Đầu Vào
             </h1>
 
-          
             {/* Badge */}
             <div className="inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-4 py-2 backdrop-blur-sm">
               <Sparkles className="h-4 w-4 text-orange-400" />
@@ -207,14 +210,18 @@ export default function EntryTestList() {
                         <Clock className="h-4 w-4 text-blue-400" />
                       </div>
                       <div className="text-xs text-gray-400">Thời gian</div>
-                      <div className="text-sm font-bold text-white">~10 phút</div>
+                      <div className="text-sm font-bold text-white">
+                        ~10 phút
+                      </div>
                     </div>
                     <div className="rounded-lg border border-white/10 bg-white/5 p-3 text-center backdrop-blur-sm">
                       <div className="mb-1 flex justify-center">
                         <Zap className="h-4 w-4 text-green-400" />
                       </div>
                       <div className="text-xs text-gray-400">Kết quả</div>
-                      <div className="text-sm font-bold text-white">Ngay lập tức</div>
+                      <div className="text-sm font-bold text-white">
+                        Ngay lập tức
+                      </div>
                     </div>
                   </div>
 
@@ -238,7 +245,9 @@ export default function EntryTestList() {
             <div className="mb-6 text-center">
               <div className="mb-3 inline-flex items-center gap-2 rounded-full border border-orange-500/30 bg-orange-500/10 px-4 py-2 backdrop-blur-sm">
                 <Sparkles className="h-4 w-4 text-orange-400" />
-                <span className="text-sm font-semibold text-orange-400">Tại sao nên làm test?</span>
+                <span className="text-sm font-semibold text-orange-400">
+                  Tại sao nên làm test?
+                </span>
               </div>
               <h2 className="text-2xl font-bold text-white">
                 Khám Phá Bản Thân,
@@ -264,8 +273,12 @@ export default function EntryTestList() {
                       <feature.icon className="h-5 w-5 text-white" />
                     </div>
 
-                    <h3 className="mb-2 font-bold text-white">{feature.title}</h3>
-                    <p className="text-sm leading-relaxed text-gray-400">{feature.description}</p>
+                    <h3 className="mb-2 font-bold text-white">
+                      {feature.title}
+                    </h3>
+                    <p className="text-sm leading-relaxed text-gray-400">
+                      {feature.description}
+                    </p>
                   </div>
                 </motion.div>
               ))}

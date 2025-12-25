@@ -131,6 +131,11 @@ export default function VideoLearningPage() {
   };
 
   const selectQuiz = (quiz: QuizItem) => {
+    // Reset tất cả state của quiz khi chuyển sang quiz mới
+    setQuizStarted(false);
+    setCurrentQuestionIndex(0);
+    setSelectedAnswers({});
+    setShowResults(false);
     setCurrentQuiz(quiz);
     setCurrentLesson(null);
   };
@@ -158,6 +163,47 @@ export default function VideoLearningPage() {
     if (!currentLesson) return;
     const idx = allLessons.findIndex((l) => l.id == currentLesson.id);
     if (idx === -1) return;
+
+    // Nếu chuyển sang bài tiếp theo, kiểm tra quiz của topic hiện tại
+    if (direction === 'next') {
+      const currentTopic = courseData.find(
+        (t) => t.id === currentLesson.topicId
+      );
+      if (
+        currentTopic &&
+        currentTopic.topicQuestions &&
+        currentTopic.topicQuestions.length > 0
+      ) {
+        // Kiểm tra xem đây có phải là lesson cuối cùng của topic không
+        const sortedLessonsInTopic = [...currentTopic.lessons].sort(
+          (a, b) => a.orderIndex - b.orderIndex
+        );
+        const isLastLessonInTopic =
+          sortedLessonsInTopic.length > 0 &&
+          currentLesson.id ===
+            sortedLessonsInTopic[sortedLessonsInTopic.length - 1].id;
+
+        // Nếu là lesson cuối cùng của topic và quiz chưa hoàn thành, chuyển sang quiz
+        if (isLastLessonInTopic && !completedQuizzes.has(currentTopic.id)) {
+          // Reset quiz state trước khi chuyển sang quiz mới
+          setQuizStarted(false);
+          setCurrentQuestionIndex(0);
+          setSelectedAnswers({});
+          setShowResults(false);
+          // Tự động chuyển sang quiz của topic này
+          setCurrentQuiz({
+            type: 'quiz',
+            topicId: currentTopic.id,
+            topicTitle: currentTopic.title,
+            questionCount: currentTopic.topicQuestions.length
+          });
+          setCurrentLesson(null);
+          setExpandedSections([currentTopic.id]);
+          return;
+        }
+      }
+    }
+
     const newIndex =
       direction === 'prev'
         ? idx > 0
@@ -167,6 +213,38 @@ export default function VideoLearningPage() {
           ? idx + 1
           : 0;
     setCurrentLesson(allLessons[newIndex]);
+    setCurrentQuiz(null);
+    setExpandedSections([allLessons[newIndex].topicId]);
+
+    await updateProgress({
+      topicId: allLessons[newIndex].topicId,
+      lessonId: allLessons[newIndex].id
+    });
+  };
+
+  // Hàm chuyển từ quiz sang bài tiếp theo (sau khi hoàn thành quiz)
+  const navigateFromQuizToNextLesson = async () => {
+    if (!currentQuiz) return;
+
+    const allLessons = getAllLessons();
+    const currentTopic = courseData.find((t) => t.id === currentQuiz.topicId);
+    if (!currentTopic) return;
+
+    // Tìm lesson cuối cùng của topic hiện tại
+    const sortedLessonsInTopic = [...currentTopic.lessons].sort(
+      (a, b) => a.orderIndex - b.orderIndex
+    );
+    if (sortedLessonsInTopic.length === 0) return;
+
+    const lastLessonInTopic =
+      sortedLessonsInTopic[sortedLessonsInTopic.length - 1];
+    const idx = allLessons.findIndex((l) => l.id === lastLessonInTopic.id);
+    if (idx === -1) return;
+
+    // Chuyển sang bài tiếp theo
+    const newIndex = idx < allLessons.length - 1 ? idx + 1 : 0;
+    setCurrentLesson(allLessons[newIndex]);
+    setCurrentQuiz(null);
     setExpandedSections([allLessons[newIndex].topicId]);
 
     await updateProgress({
@@ -181,6 +259,9 @@ export default function VideoLearningPage() {
     Record<number, number[]>
   >({});
   const [showResults, setShowResults] = useState(false);
+  const [completedQuizzes, setCompletedQuizzes] = useState<Set<number>>(
+    new Set()
+  );
 
   const handleAnswerSelect = (
     questionId: number,
@@ -231,6 +312,14 @@ export default function VideoLearningPage() {
     setCurrentQuestionIndex(0);
     setSelectedAnswers({});
     setShowResults(false);
+    // Xóa quiz khỏi danh sách đã hoàn thành khi làm lại
+    if (currentQuiz) {
+      setCompletedQuizzes((prev) => {
+        const next = new Set(prev);
+        next.delete(currentQuiz.topicId);
+        return next;
+      });
+    }
   };
 
   const exitQuiz = () => {
@@ -456,6 +545,10 @@ export default function VideoLearningPage() {
               calculateScore={calculateScore}
               resetQuiz={resetQuiz}
               exitQuiz={exitQuiz}
+              onQuizCompleted={(topicId) => {
+                setCompletedQuizzes((prev) => new Set([...prev, topicId]));
+              }}
+              onNavigateToNextLesson={navigateFromQuizToNextLesson}
             />
           )}
 
@@ -476,6 +569,7 @@ export default function VideoLearningPage() {
             onAskNote={(note) => {
               console.log(note);
             }}
+            isReadOnly={false}
           />
         </div>
 

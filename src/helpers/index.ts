@@ -573,22 +573,3 @@ function applyMixins(derivedCtor: any, constructors: any[]) {
 }
 
 applyMixins(helpers, [helper_is, helper_get]);
-
-
-
-
-
-// function applyMixins(derivedCtor: any, constructors: any[]) {
-//   constructors.forEach((baseCtor) => {
-//     Object.getOwnPropertyNames(baseCtor.prototype).forEach((name) => {
-//       Object.defineProperty(
-//         derivedCtor.prototype,
-//         name,
-//         Object.getOwnPropertyDescriptor(baseCtor.prototype, name) ||
-//           Object.create(null)
-//       );
-//     });
-//   });
-// }
-
-// applyMixins(helpers, [helper_is, helper_get]);

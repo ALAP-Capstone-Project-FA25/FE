@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, useMemo, useCallback } from 'react';
 import { Loader2, AlertCircle } from 'lucide-react';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 
@@ -13,7 +13,11 @@ import { LessonType } from '@/types/api.types';
 // Import mentor-specific components
 import ReadOnlyVideoSection from './ReadOnlyVideoSection';
 
-import { useGetStudentProgress, useGetStudentNotes, useGetCourseTopicsForMentor } from '@/queries/mentor.query';
+import {
+  useGetStudentProgress,
+  useGetStudentNotes,
+  useGetCourseTopicsForMentor
+} from '@/queries/mentor.query';
 
 interface StudentProgressViewerProps {
   studentId: number;
@@ -31,17 +35,21 @@ export default function StudentProgressViewer({
   const [expandedSections, setExpandedSections] = useState<number[]>([]);
   const [notes, setNotes] = useState<Note[]>([]);
   const [courseData, setCourseData] = useState<Topic[]>([]);
+  const [isTransitioning, setIsTransitioning] = useState(false);
   const playerRef = useRef<any>(null);
+  const transitionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Fetch student progress data
-  const { isLoading: isLoadingProgress, error: progressError } = 
+  const { isLoading: isLoadingProgress, error: progressError } =
     useGetStudentProgress(studentId, courseId);
-  
-  const { data: notesData, isLoading: isLoadingNotes } = 
-    useGetStudentNotes(studentId, currentLesson?.id || 0);
-    
+
+  const { data: notesData, isLoading: isLoadingNotes } = useGetStudentNotes(
+    studentId,
+    currentLesson?.id || 0
+  );
+
   // Fetch course topics for sidebar
-  const { data: topicsData, isLoading: isLoadingTopics } = 
+  const { data: topicsData, isLoading: isLoadingTopics } =
     useGetCourseTopicsForMentor(courseId, studentId);
 
   const isLoading = isLoadingProgress || isLoadingNotes || isLoadingTopics;
@@ -51,7 +59,7 @@ export default function StudentProgressViewer({
   useEffect(() => {
     if (topicsData?.listObjects) {
       setCourseData(topicsData.listObjects);
-      
+
       // Auto-select first lesson if none selected
       if (!currentLesson && !currentQuiz && topicsData.listObjects.length > 0) {
         const firstTopic = topicsData.listObjects[0];
@@ -63,7 +71,8 @@ export default function StudentProgressViewer({
     } else {
       setCourseData([]);
     }
-  }, [topicsData, currentLesson, currentQuiz]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [topicsData]);
 
   // Update notes when notes data is loaded
   useEffect(() => {
@@ -74,52 +83,103 @@ export default function StudentProgressViewer({
     }
   }, [notesData]);
 
-  const toggleSection = (sectionId: number) => {
+  const toggleSection = useCallback((sectionId: number) => {
     setExpandedSections((prev) =>
       prev.includes(sectionId)
         ? prev.filter((id) => id !== sectionId)
         : [...prev, sectionId]
     );
-  };
+  }, []);
 
-  const selectLesson = (lesson: Lesson) => {
-    setCurrentLesson(lesson);
-    setCurrentQuiz(null);
-  };
+  const selectLesson = useCallback(
+    (lesson: Lesson) => {
+      // Prevent multiple rapid clicks
+      if (isTransitioning) return;
 
-  const selectQuiz = (quiz: QuizItem) => {
-    setCurrentQuiz(quiz);
-    setCurrentLesson(null);
-  };
+      setIsTransitioning(true);
+      setCurrentLesson(lesson);
+      setCurrentQuiz(null);
+
+      // Clear existing timeout
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+
+      // Reset transitioning state after a short delay
+      transitionTimeoutRef.current = setTimeout(() => {
+        setIsTransitioning(false);
+      }, 300);
+    },
+    [isTransitioning]
+  );
+
+  const selectQuiz = useCallback(
+    (quiz: QuizItem) => {
+      // Prevent multiple rapid clicks
+      if (isTransitioning) return;
+
+      setIsTransitioning(true);
+      setCurrentQuiz(quiz);
+      setCurrentLesson(null);
+
+      // Clear existing timeout
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+
+      // Reset transitioning state after a short delay
+      transitionTimeoutRef.current = setTimeout(() => {
+        setIsTransitioning(false);
+      }, 300);
+    },
+    [isTransitioning]
+  );
 
   // Player ready callback
-  const onPlayerReady = (player: any) => {
+  const onPlayerReady = useCallback((player: any) => {
     playerRef.current = player;
-  };
+  }, []);
 
   // Disabled functions for read-only mode
-  const onAddNote = () => {};
-  const onDeleteNote = () => {};
-  const onJumpNote = (time: number) => {
+  const onAddNote = useCallback(() => {}, []);
+  const onDeleteNote = useCallback(() => {}, []);
+  const onJumpNote = useCallback((time: number) => {
     if (playerRef.current) {
       playerRef.current.seekTo(time, true);
     }
-  };
-  const onPrevLesson = () => {};
-  const onNextLesson = () => {};
-  const onAskNote = () => {};
+  }, []);
+  const onPrevLesson = useCallback(() => {}, []);
+  const onNextLesson = useCallback(() => {}, []);
+  const onAskNote = useCallback(() => {}, []);
 
-  const videoId = currentLesson ? getYouTubeVideoId(currentLesson.videoUrl) : '';
-  const topicForQuiz = currentQuiz
-    ? courseData.find((t) => t.id === currentQuiz.topicId) || null
-    : null;
+  // Memoize computed values
+  const videoId = useMemo(() => {
+    return currentLesson ? getYouTubeVideoId(currentLesson.videoUrl) : '';
+  }, [currentLesson?.videoUrl]);
+
+  const topicForQuiz = useMemo(() => {
+    return currentQuiz
+      ? courseData.find((t) => t.id === currentQuiz.topicId) || null
+      : null;
+  }, [currentQuiz, courseData]);
+
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (transitionTimeoutRef.current) {
+        clearTimeout(transitionTimeoutRef.current);
+      }
+    };
+  }, []);
 
   if (isLoading) {
     return (
       <div className="flex h-full items-center justify-center bg-gray-50">
         <div className="text-center">
           <Loader2 className="mx-auto h-8 w-8 animate-spin text-blue-500" />
-          <p className="mt-2 text-sm text-gray-600">Đang tải tiến độ học tập...</p>
+          <p className="mt-2 text-sm text-gray-600">
+            Đang tải tiến độ học tập...
+          </p>
         </div>
       </div>
     );
@@ -144,19 +204,30 @@ export default function StudentProgressViewer({
           <div className="text-sm text-gray-300">
             Đang xem tiến độ của học viên (chỉ đọc)
           </div>
-          <div className="text-xs text-gray-400">
-            ID: {studentId} | Course: {courseId} | Notes: {notes.length}
-          </div>
         </div>
       </div>
 
       <div className="flex flex-1 overflow-hidden">
-        <div className="flex flex-1 overflow-scroll flex-col bg-black">
+        <div className="relative flex flex-1 flex-col overflow-scroll bg-black">
+          {/* Transition overlay */}
+          {isTransitioning && (
+            <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/50">
+              <div className="text-center">
+                <Loader2 className="mx-auto h-8 w-8 animate-spin text-orange-500" />
+                <p className="mt-2 text-sm text-gray-300">
+                  Đang tải bài học...
+                </p>
+              </div>
+            </div>
+          )}
+
           {!currentLesson && !currentQuiz ? (
             <div className="flex h-full items-center justify-center">
               <div className="text-center text-gray-400">
-                <p className="text-lg mb-2">Chọn một bài học để xem tiến độ</p>
-                <p className="text-sm">Sử dụng sidebar bên phải để chọn bài học</p>
+                <p className="mb-2 text-lg">Chọn một bài học để xem tiến độ</p>
+                <p className="text-sm">
+                  Sử dụng sidebar bên phải để chọn bài học
+                </p>
               </div>
             </div>
           ) : currentLesson?.lessonType === LessonType.DOCUMENT ? (
@@ -191,9 +262,8 @@ export default function StudentProgressViewer({
             onPrevLesson={onPrevLesson} // Disabled for read-only
             onNextLesson={onNextLesson} // Disabled for read-only
             onAskNote={onAskNote} // Disabled for read-only
+            isReadOnly={true}
           />
-          
-
         </div>
 
         <Sidebar
@@ -205,8 +275,6 @@ export default function StudentProgressViewer({
           selectLesson={selectLesson}
           selectQuiz={selectQuiz}
         />
-        
-
       </div>
     </div>
   );

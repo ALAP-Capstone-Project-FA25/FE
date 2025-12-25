@@ -13,18 +13,17 @@ import {
   Search,
   Image as ImageIcon,
   Video,
-  Loader2,
-  Check
+  Check,
+  X
 } from 'lucide-react';
-import { QuickMeetIcon } from '@/components/meet';
 import { cn } from '@/lib/utils';
 import { toast } from '@/components/ui/use-toast';
 
 import { useQueryClient } from '@tanstack/react-query';
 import { HubConnection, HubConnectionState } from '@microsoft/signalr';
 import { createChatConnection } from '@/lib/signalr';
-import BaseRequest from '@/config/axios.config';
 import meetService from '@/services/meet.service';
+import SingleFileUpload from '@/components/shared/single-file-upload';
 
 // Import mentor components
 import CourseProgressButton from '@/components/mentor/CourseProgressButton';
@@ -134,7 +133,7 @@ export default function MentorChatRoomPage() {
 
   const [messageInput, setMessageInput] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [isUploading, setIsUploading] = useState(false);
+  const [showImageUpload, setShowImageUpload] = useState(false);
   const [showMeetingConfirm, setShowMeetingConfirm] = useState(false);
 
   // Progress modal state
@@ -148,7 +147,6 @@ export default function MentorChatRoomPage() {
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const scrollAreaRef = useRef<HTMLDivElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const queryClient = useQueryClient();
   const connectionRef = useRef<HubConnection | null>(null);
@@ -176,6 +174,7 @@ export default function MentorChatRoomPage() {
   const handleSelectRoom = async (roomId: number) => {
     setSelectedRoomId(roomId);
     setShowMeetingConfirm(false);
+    setShowImageUpload(false);
 
     // Mark messages as read when selecting room (fallback handling)
     queryClient.setQueryData(
@@ -224,67 +223,25 @@ export default function MentorChatRoomPage() {
     setTimeout(scrollToBottom, 100);
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: 'Lỗi',
-        description: 'Chỉ chấp nhận file ảnh',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: 'Lỗi',
-        description: 'Kích thước file không được vượt quá 5MB',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setIsUploading(true);
+  const handleImageUploaded = async (fileUrl: string) => {
+    if (!fileUrl || !selectedRoomId) return;
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const [error, response] = await BaseRequest.Post('/upload', formData);
-
-      if (error) {
-        throw new Error(error?.message || 'Upload failed');
-      }
-
-      const fileUrl = response?.downloadUrl;
-      if (!fileUrl) {
-        throw new Error('No file URL returned');
-      }
-
       // Send image message
       await handleSendMessage(MessageType.IMAGE, fileUrl);
+      setShowImageUpload(false);
 
       toast({
         title: 'Thành công',
         description: 'Đã gửi ảnh'
       });
     } catch (error: any) {
-      console.error('Lỗi khi upload ảnh:', error);
+      console.error('Lỗi khi gửi ảnh:', error);
       toast({
         title: 'Lỗi',
-        description: error?.message || 'Không thể upload ảnh',
+        description: error?.message || 'Không thể gửi ảnh',
         variant: 'destructive'
       });
-    } finally {
-      setIsUploading(false);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
   };
 
@@ -792,21 +749,6 @@ export default function MentorChatRoomPage() {
               </div>
 
               <div className="flex items-center gap-2">
-                {/* Video call button */}
-                <button
-                  onClick={() => setShowMeetingConfirm(true)}
-                  className="rounded-full p-2 transition-colors hover:bg-gray-100"
-                >
-                  <Video className="h-5 w-5 text-blue-600" />
-                </button>
-
-                {/* Quick Meet Icon */}
-                <QuickMeetIcon
-                  variant="ghost"
-                  tooltipText="Tạo Meet nhanh (mở tab mới)"
-                  className="rounded-full p-2 hover:bg-gray-100"
-                />
-
                 {/* Progress button - moved to header actions */}
                 {(selectedRoom.courseId || selectedRoom.course?.id) && (
                   <CourseProgressButton
@@ -975,6 +917,33 @@ export default function MentorChatRoomPage() {
               </div>
             </ScrollArea>
 
+            {/* Image Upload Modal */}
+            {showImageUpload && (
+              <div className="border-t border-gray-200 bg-white p-4">
+                <div className="mb-3 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <ImageIcon className="h-5 w-5 text-blue-500" />
+                    <h4 className="font-medium text-gray-900">Upload ảnh</h4>
+                  </div>
+                  <button
+                    onClick={() => setShowImageUpload(false)}
+                    className="rounded-lg p-1 transition-colors hover:bg-gray-100"
+                  >
+                    <X className="h-4 w-4 text-gray-400" />
+                  </button>
+                </div>
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <SingleFileUpload
+                    onFileUploaded={handleImageUploaded}
+                    acceptedFileTypes={['image/*']}
+                    maxFileSize={5}
+                    autoUpload={true}
+                    placeholder="Kéo thả ảnh hoặc click để chọn"
+                  />
+                </div>
+              </div>
+            )}
+
             {/* Messenger-style Meeting Confirmation */}
             {showMeetingConfirm && (
               <div className="border-t border-gray-200 bg-white p-4">
@@ -1019,23 +988,12 @@ export default function MentorChatRoomPage() {
                 {/* Attachment buttons */}
                 <div className="flex gap-1">
                   {/* Image Upload Button */}
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
                   <button
-                    onClick={() => fileInputRef.current?.click()}
-                    disabled={isUploading || !selectedRoomId}
+                    onClick={() => setShowImageUpload(!showImageUpload)}
+                    disabled={!selectedRoomId}
                     className="rounded-full p-2 transition-colors hover:bg-gray-100 disabled:opacity-50"
                   >
-                    {isUploading ? (
-                      <Loader2 className="h-5 w-5 animate-spin text-blue-500" />
-                    ) : (
-                      <ImageIcon className="h-5 w-5 text-blue-500" />
-                    )}
+                    <ImageIcon className="h-5 w-5 text-blue-500" />
                   </button>
 
                   {/* Meeting Button */}

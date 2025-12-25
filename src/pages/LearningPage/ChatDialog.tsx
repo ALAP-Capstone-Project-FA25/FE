@@ -17,9 +17,9 @@ import { useParams } from 'react-router-dom';
 import { toast } from '@/components/ui/use-toast';
 import { HubConnection, HubConnectionState } from '@microsoft/signalr';
 import { createChatConnection } from '@/lib/signalr';
-import BaseRequest from '@/config/axios.config';
 import meetService from '@/services/meet.service';
 import { MeetStatus } from '@/components/meet/MeetStatus';
+import SingleFileUpload from '@/components/shared/single-file-upload';
 
 enum MessageType {
   TEXT = 0,
@@ -52,12 +52,11 @@ export default function ChatDialog({
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-  const [isUploading, setIsUploading] = useState(false);
+  const [showImageUpload, setShowImageUpload] = useState(false);
   const [showMeetingConfirm, setShowMeetingConfirm] = useState(false);
   const [isGeneratingMeet, setIsGeneratingMeet] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
   const { id } = useParams();
 
   const connectionRef = useRef<HubConnection | null>(null);
@@ -77,6 +76,7 @@ export default function ChatDialog({
       setMessages([]);
       setInput('');
       setShowMeetingConfirm(false);
+      setShowImageUpload(false);
     }
   }, [isOpen, chatroomData]);
 
@@ -185,73 +185,31 @@ export default function ChatDialog({
     }
   };
 
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    // Validate file type
-    if (!file.type.startsWith('image/')) {
-      toast({
-        title: 'Lỗi',
-        description: 'Chỉ chấp nhận file ảnh',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    // Validate file size (max 5MB)
-    if (file.size > 5 * 1024 * 1024) {
-      toast({
-        title: 'Lỗi',
-        description: 'Kích thước file không được vượt quá 5MB',
-        variant: 'destructive'
-      });
-      return;
-    }
-
-    setIsUploading(true);
+  const handleImageUploaded = async (fileUrl: string) => {
+    if (!fileUrl || !chatroomData?.id) return;
 
     try {
-      const formData = new FormData();
-      formData.append('file', file);
-
-      const [error, response] = await BaseRequest.Post('/upload', formData);
-
-      if (error) {
-        throw new Error(error?.message || 'Upload failed');
-      }
-
-      const fileUrl = response?.downloadUrl;
-      if (!fileUrl) {
-        throw new Error('No file URL returned');
-      }
-
       // Send image message
       await handleSend(MessageType.IMAGE, fileUrl);
+      setShowImageUpload(false);
 
       toast({
         title: 'Thành công',
         description: 'Đã gửi ảnh'
       });
     } catch (error: any) {
-      console.error('Lỗi khi upload ảnh:', error);
+      console.error('Lỗi khi gửi ảnh:', error);
       toast({
         title: 'Lỗi',
-        description: error?.message || 'Không thể upload ảnh',
+        description: error?.message || 'Không thể gửi ảnh',
         variant: 'destructive'
       });
-    } finally {
-      setIsUploading(false);
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
     }
   };
 
   const handleSendMeeting = async () => {
     setIsGeneratingMeet(true);
-    
+
     try {
       // Sử dụng Meet service để tạo link thật
       const meetingLink = await meetService.generateMeetLink();
@@ -277,7 +235,7 @@ export default function ChatDialog({
 
   const handleQuickMeeting = async () => {
     setIsGeneratingMeet(true);
-    
+
     try {
       // Tạo Meet link nhanh mà không cần confirm
       const meetingLink = await meetService.generateMeetLink();
@@ -375,12 +333,7 @@ export default function ChatDialog({
 
     // MEETING type
     if (msgType === MessageType.MEETING || msgType === 2) {
-      return (
-        <MeetStatus 
-          meetLink={message.content} 
-          isUser={message.isUser} 
-        />
-      );
+      return <MeetStatus meetLink={message.content} isUser={message.isUser} />;
     }
 
     return (
@@ -514,19 +467,6 @@ export default function ChatDialog({
             </div>
           )}
 
-          {isUploading && (
-            <div className="flex justify-end">
-              <div className="rounded-2xl border border-gray-700 bg-gray-800 px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin text-blue-400" />
-                  <span className="text-sm text-gray-400">
-                    Đang upload ảnh...
-                  </span>
-                </div>
-              </div>
-            </div>
-          )}
-
           <div ref={messagesEndRef} />
         </div>
 
@@ -539,8 +479,8 @@ export default function ChatDialog({
                 <h4 className="font-medium text-white">Gửi link meeting</h4>
               </div>
               <p className="mb-4 text-sm text-gray-400">
-                Hệ thống sẽ tạo một Google Meet link mới và gửi cho mentor. 
-                Link này có thể được sử dụng ngay lập tức.
+                Hệ thống sẽ tạo một Google Meet link mới và gửi cho mentor. Link
+                này có thể được sử dụng ngay lập tức.
               </p>
               <div className="flex gap-2">
                 <button
@@ -568,20 +508,42 @@ export default function ChatDialog({
           </div>
         )}
 
+        {/* Image Upload Modal */}
+        {showImageUpload && (
+          <div className="border-t border-gray-800 bg-gray-900/80 p-4">
+            <div className="mb-3 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <ImageIcon className="h-5 w-5 text-orange-400" />
+                <h4 className="font-medium text-white">Upload ảnh</h4>
+              </div>
+              <button
+                onClick={() => setShowImageUpload(false)}
+                className="rounded-lg p-1 transition-colors hover:bg-gray-800"
+              >
+                <X className="h-4 w-4 text-gray-400" />
+              </button>
+            </div>
+            <div className="rounded-xl border border-gray-700 bg-gray-800 p-4">
+              <div className="[&_.bg-blue-500]:!bg-orange-500 [&_.bg-blue-50]:!bg-gray-700/50 [&_.border-gray-300]:!border-gray-600 [&_.border-gray-400]:!border-gray-500 [&_.text-gray-400]:!text-gray-400 [&_.text-gray-500]:!text-gray-400 [&_.text-gray-600]:!text-gray-300 [&_.text-gray-900]:!text-gray-100">
+                <SingleFileUpload
+                  onFileUploaded={handleImageUploaded}
+                  acceptedFileTypes={['image/*']}
+                  maxFileSize={5}
+                  autoUpload={true}
+                  placeholder="Kéo thả ảnh hoặc click để chọn"
+                />
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Input */}
         <div className="border-t border-gray-800 bg-gray-900/50 p-4">
           <div className="mb-2 flex gap-2">
             {/* Image Upload Button */}
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept="image/*"
-              onChange={handleImageUpload}
-              className="hidden"
-            />
             <button
-              onClick={() => fileInputRef.current?.click()}
-              disabled={isLoading || isUploading || !chatroomData?.id}
+              onClick={() => setShowImageUpload(!showImageUpload)}
+              disabled={isLoading || isGeneratingMeet || !chatroomData?.id}
               className="rounded-lg border border-gray-700 bg-gray-800 p-2 text-gray-400 transition-colors hover:bg-gray-700 hover:text-white disabled:cursor-not-allowed disabled:opacity-50"
               title="Upload ảnh"
             >
@@ -601,7 +563,6 @@ export default function ChatDialog({
                 <Video className="h-5 w-5" />
               )}
             </button>
-
           </div>
 
           <div className="flex gap-2">

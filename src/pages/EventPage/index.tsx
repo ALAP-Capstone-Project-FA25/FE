@@ -39,11 +39,15 @@ import { format } from 'date-fns';
 import { vi } from 'date-fns/locale';
 import { useMemo, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useBuyEventTicket, useCheckUserTicket } from '@/queries/event-ticket.query';
+import {
+  useBuyEventTicket,
+  useCheckUserTicket
+} from '@/queries/event-ticket.query';
 import { toast } from '@/components/ui/use-toast';
 import { Input } from '@/components/ui/input';
 import TicketStatusCard from '@/components/event/TicketStatusCard';
 import __helpers from '@/helpers';
+import { PaymentStatus } from '@/types/api.types';
 
 enum EventStatus {
   IN_COMING = 1,
@@ -86,11 +90,10 @@ export default function EventPage() {
   const [selectedEvent, setSelectedEvent] = useState<Event | null>(null);
   const [showPaymentConfirm, setShowPaymentConfirm] = useState(false);
   const isAuthenticated = true;
-  
+
   // FIX 1: Add proper React Query options to prevent infinite loop
-  const { data: ticketStatus, refetch: refetchTicketStatus } = useCheckUserTicket(
-    selectedEvent?.id || 0
-  );
+  const { data: ticketStatus, refetch: refetchTicketStatus } =
+    useCheckUserTicket(selectedEvent?.id || 0);
 
   const events = useMemo(() => {
     const allEvents = (data?.listObjects as Event[]) || [];
@@ -237,7 +240,42 @@ export default function EventPage() {
   };
 
   // FIX 3: Use data URL for placeholder instead of external service
-  const PLACEHOLDER_IMAGE = 'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect width="400" height="300" fill="%23f1f5f9"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2394a3b8"%3EEvent Image%3C/text%3E%3C/svg%3E';
+  const PLACEHOLDER_IMAGE =
+    'data:image/svg+xml,%3Csvg xmlns="http://www.w3.org/2000/svg" width="400" height="300"%3E%3Crect width="400" height="300" fill="%23f1f5f9"/%3E%3Ctext x="50%25" y="50%25" dominant-baseline="middle" text-anchor="middle" font-family="sans-serif" font-size="24" fill="%2394a3b8"%3EEvent Image%3C/text%3E%3C/svg%3E';
+
+  // Component to show payment status badge on event card
+  const EventCardPaymentBadge = ({ eventId }: { eventId: number }) => {
+    const { data: ticketStatus } = useCheckUserTicket(eventId, isAuthenticated);
+
+    if (!isAuthenticated || !ticketStatus?.hasTicket) return null;
+
+    // PaymentStatus.SUCCESS = 2
+    const paymentStatus = ticketStatus.paymentStatus;
+    if (paymentStatus === PaymentStatus.SUCCESS) {
+      return (
+        <div className="absolute bottom-3 left-3 z-10">
+          <Badge className="border-0 bg-green-500 text-white shadow-md">
+            <CheckCircle2 className="mr-1 h-3 w-3" />
+            Đã thanh toán
+          </Badge>
+        </div>
+      );
+    }
+
+    // Show pending payment badge (PaymentStatus.PENDING = 1)
+    if (paymentStatus === PaymentStatus.PENDING && !ticketStatus.isExpired) {
+      return (
+        <div className="absolute bottom-3 left-3 z-10">
+          <Badge className="border-0 bg-amber-500 text-white shadow-md">
+            <Clock className="mr-1 h-3 w-3" />
+            Chờ thanh toán
+          </Badge>
+        </div>
+      );
+    }
+
+    return null;
+  };
 
   const EventCard = ({ event, index }: { event: Event; index: number }) => (
     <motion.div
@@ -282,6 +320,9 @@ export default function EventPage() {
               {formatCurrency(event.amount)}
             </p>
           </div>
+
+          {/* Payment Status Badge */}
+          <EventCardPaymentBadge eventId={event.id} />
         </div>
 
         <CardContent className="p-4">
@@ -785,13 +826,16 @@ export default function EventPage() {
                       />
                     )}
 
-                    {(!isAuthenticated || !ticketStatus?.hasTicket || ticketStatus?.isExpired) && (
+                    {(!isAuthenticated ||
+                      !ticketStatus?.hasTicket ||
+                      ticketStatus?.isExpired) && (
                       <Button
                         onClick={() => {
                           if (!isAuthenticated) {
                             toast({
                               title: 'Vui lòng đăng nhập',
-                              description: 'Bạn cần đăng nhập để mua vé sự kiện',
+                              description:
+                                'Bạn cần đăng nhập để mua vé sự kiện',
                               variant: 'destructive'
                             });
                             return;
@@ -801,7 +845,9 @@ export default function EventPage() {
                         className="w-full bg-orange-500 py-6 text-base font-semibold hover:bg-orange-600"
                       >
                         <Ticket className="mr-2 h-5 w-5" />
-                        {ticketStatus?.isExpired ? 'Đăng ký lại' : 'Đăng ký ngay'}
+                        {ticketStatus?.isExpired
+                          ? 'Đăng ký lại'
+                          : 'Đăng ký ngay'}
                       </Button>
                     )}
 

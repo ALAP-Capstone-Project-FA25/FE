@@ -2,15 +2,10 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, Clock, Receipt, AlertCircle } from 'lucide-react';
+import { PaymentStatus, UserTicketStatusDto } from '@/types/api.types';
 
 interface TicketStatusCardProps {
-  ticketStatus: {
-    hasTicket: boolean;
-    paymentStatus?: number;
-    isExpired?: boolean;
-    minutesRemaining?: number;
-    paymentUrl?: string;
-  };
+  ticketStatus: UserTicketStatusDto;
   onPayNow: (url: string) => void;
   onRegisterAgain: () => void;
 }
@@ -31,7 +26,7 @@ export default function TicketStatusCard({
   if (!ticketStatus.hasTicket) return null;
 
   // Payment successful
-  if (ticketStatus.paymentStatus === 0) {
+  if (ticketStatus.paymentStatus === PaymentStatus.SUCCESS) {
     return (
       <Card className="border-2 border-green-200 bg-gradient-to-br from-green-50 to-emerald-50">
         <CardContent className="p-4">

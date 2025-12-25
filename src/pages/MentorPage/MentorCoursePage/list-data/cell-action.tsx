@@ -75,8 +75,6 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
     navigate(`/admin/courses/${data.id}/topics`);
   };
 
- 
-
   const totalUsers = userCourseData?.length || 0;
   const completedUsers =
     userCourseData?.filter((uc: UserCourseDetail) => uc.isDone).length || 0;
@@ -122,7 +120,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
           </Button>
         </DialogTrigger>
 
-        <DialogContent className="max-h-[85vh] max-w-3xl">
+        <DialogContent className="max-h-[85vh] max-w-3xl overflow-scroll">
           {/* Header đơn giản */}
           <div className="border-b pb-5">
             <DialogHeader>
@@ -238,7 +236,7 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
                                     Tiến độ học tập
                                   </span>
                                   <span className="font-bold text-orange-600">
-                                    {userCourse.progressPercent}%
+                                    {userCourse.progressPercent.toFixed(0)}%
                                   </span>
                                 </div>
                                 <div className="h-2 overflow-hidden rounded-full bg-gray-100">
@@ -283,12 +281,8 @@ export const CellAction: React.FC<CellActionProps> = ({ data }) => {
                                   </Badge>
                                 )}
                               </div>
-
                             </div>
                           </div>
-
-                          
-                         
                         </div>
                       </div>
                     )

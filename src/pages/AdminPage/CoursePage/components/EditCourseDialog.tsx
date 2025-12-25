@@ -8,6 +8,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/components/ui/use-toast';
 import { useCreateUpdateCourse, useGetCourseById } from '@/queries/course.query';
 import { useGetCategoriesByPaging } from '@/queries/category.query';
@@ -28,11 +29,12 @@ import { CourseType } from '@/types/api.types';
 
 interface EditCourseDialogProps {
   courseId: number | null;
+  courseData?: any; // Pass course data directly to avoid refetch
   isOpen: boolean;
   onClose: () => void;
 }
 
-export default function EditCourseDialog({ courseId, isOpen, onClose }: EditCourseDialogProps) {
+export default function EditCourseDialog({ courseId, courseData: initialCourseData, isOpen, onClose }: EditCourseDialogProps) {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState<number | ''>(1);
@@ -47,10 +49,13 @@ export default function EditCourseDialog({ courseId, isOpen, onClose }: EditCour
   const queryClient = useQueryClient();
   const { mutateAsync: createUpdateCourse, isPending } = useCreateUpdateCourse();
   
-  // Get course data
+  // Get course data (only if not provided)
   const { data: courseData, isLoading: isLoadingCourse } = useGetCourseById(courseId || 0, {
-    enabled: !!courseId && isOpen
+    enabled: !!courseId && isOpen && !initialCourseData
   });
+  
+  // Use provided data or fetched data
+  const course = initialCourseData || courseData?.data;
   
   // Get mentors and categories
   const { data: mentorsData, isPending: isPendingMentors } =
@@ -61,9 +66,9 @@ export default function EditCourseDialog({ courseId, isOpen, onClose }: EditCour
     useGetCategoriesByPaging(1, 100, '');
   const categories = categoriesData?.listObjects || [];
 
-  // Reset form when dialog closes or courseId changes
+  // Reset form when dialog closes
   useEffect(() => {
-    if (!isOpen || !courseId) {
+    if (!isOpen) {
       setTitle('');
       setDescription('');
       setPrice(1);
@@ -74,13 +79,11 @@ export default function EditCourseDialog({ courseId, isOpen, onClose }: EditCour
       setCourseType(CourseType.AS_LEVEL);
       setDifficulty(1);
     }
-  }, [isOpen, courseId]);
+  }, [isOpen]);
 
-  // Populate form when course data is loaded
+  // Populate form when course data is available
   useEffect(() => {
-    if (courseData?.data && isOpen && courseId) {
-      const course = courseData.data;
-      
+    if (course && isOpen && courseId) {
       setTitle(course.title || '');
       setDescription(course.description || '');
       setPrice(course.price || 1);
@@ -88,10 +91,10 @@ export default function EditCourseDialog({ courseId, isOpen, onClose }: EditCour
       setCategoryId(course.categoryId?.toString() || '');
       setMentorId(course.mentorId?.toString() || '');
       setImageUrl(course.imageUrl || '');
-      setCourseType((course as any).courseType || CourseType.AS_LEVEL);
-      setDifficulty((course as any).difficulty || 1);
+      setCourseType(course.courseType ?? CourseType.AS_LEVEL);
+      setDifficulty(course.difficulty || 1);
     }
-  }, [courseData, isOpen, courseId]);
+  }, [course, isOpen, courseId]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -172,11 +175,12 @@ export default function EditCourseDialog({ courseId, isOpen, onClose }: EditCour
 
               <div className="space-y-2">
                 <Label htmlFor="description">Mô tả</Label>
-                <Input
+                <Textarea
                   id="description"
                   placeholder="Mô tả khóa học..."
                   value={description}
                   onChange={(e) => setDescription(e.target.value)}
+                  rows={3}
                   required
                 />
               </div>

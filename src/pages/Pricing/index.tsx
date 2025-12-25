@@ -66,6 +66,34 @@ export default function PricingPage() {
   );
   const { mutateAsync: buyPackage } = useBuyPackage();
   const showPackages = packages?.length >= 2 ? packages.slice(0, 2) : [];
+
+  // Check gói hiện tại có còn hạn không
+  // Xử lý cả trường hợp response có field data hoặc không
+  const getCurrentActivePackage = React.useMemo(() => {
+    if (!resUserPackages) return null;
+
+    // Unwrap data nếu response có structure TFUResponse
+    const userPackage = (resUserPackages as any)?.data || resUserPackages;
+    if (!userPackage) return null;
+
+    // Check expiredAt nếu có
+    const now = new Date();
+    const expiredAt = userPackage.expiredAt
+      ? new Date(userPackage.expiredAt)
+      : null;
+
+    // Nếu gói hết hạn, không coi là gói hiện tại
+    if (expiredAt && expiredAt < now) {
+      return null;
+    }
+
+    // Check isActive
+    if (userPackage.isActive === false) {
+      return null;
+    }
+
+    return userPackage;
+  }, [resUserPackages]);
   const handleBuyPackage = async (packageId: number) => {
     setIsLoadingPayment(true);
     const [err, data] = await buyPackage(packageId);
@@ -121,12 +149,15 @@ export default function PricingPage() {
             {showPackages
               // luôn đưa gói hiện tại lên đầu
               .sort((a: any, b: any) => {
-                const aCur = resUserPackages?.id === a.id ? -1 : 0;
-                const bCur = resUserPackages?.id === b.id ? -1 : 0;
+                const aCur =
+                  getCurrentActivePackage?.packageId === a.id ? -1 : 0;
+                const bCur =
+                  getCurrentActivePackage?.packageId === b.id ? -1 : 0;
                 return aCur - bCur;
               })
               .map((pkg: any) => {
-                const isCurrent = resUserPackages?.id === pkg.id;
+                // Check gói hiện tại: phải match packageId và còn hạn
+                const isCurrent = getCurrentActivePackage?.packageId === pkg.id;
                 const { display, period } = getPrice(pkg.price);
 
                 const isPopular = !!pkg.isPopular;

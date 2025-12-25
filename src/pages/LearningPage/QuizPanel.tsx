@@ -27,7 +27,9 @@ export default function QuizPanel({
   setShowResults,
   calculateScore,
   resetQuiz,
-  exitQuiz
+  exitQuiz,
+  onQuizCompleted,
+  onNavigateToNextLesson
 }: {
   currentQuiz: QuizItem;
   topic: Topic;
@@ -51,11 +53,18 @@ export default function QuizPanel({
   };
   resetQuiz: () => void;
   exitQuiz: () => void;
+  onQuizCompleted?: (topicId: number) => void;
+  onNavigateToNextLesson?: () => void;
 }) {
   const { mutateAsync: submitQuiz, isPending: isSubmitting } = useSubmitTopicQuiz();
   const [quizResult, setQuizResult] = useState<{ suggestedLessons: SuggestedLessonDto[] } | null>(null);
   const router = useRouter();
   const { toast } = useToast();
+
+  // Reset quizResult khi chuyển sang quiz mới (topic thay đổi)
+  useEffect(() => {
+    setQuizResult(null);
+  }, [topic.id]);
 
   // Submit quiz when showing results
   useEffect(() => {
@@ -76,6 +85,10 @@ export default function QuizPanel({
             });
           } else if (data?.data) {
             setQuizResult({ suggestedLessons: data.data.suggestedLessons || [] });
+            // Đánh dấu quiz đã hoàn thành
+            if (onQuizCompleted) {
+              onQuizCompleted(topic.id);
+            }
           }
         } catch (error: any) {
           toast({
@@ -264,9 +277,20 @@ export default function QuizPanel({
             >
               Làm Lại
             </button>
+            {onNavigateToNextLesson && (
+              <button
+                onClick={onNavigateToNextLesson}
+                className="flex-1 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 py-3 font-semibold text-white transition-all hover:from-orange-600 hover:to-orange-700"
+              >
+                BÀI TIẾP THEO
+                <ChevronRight className="ml-2 inline h-5 w-5" />
+              </button>
+            )}
             <button
               onClick={exitQuiz}
-              className="flex-1 rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 py-3 font-semibold text-white transition-all hover:from-orange-600 hover:to-orange-700"
+              className={`rounded-lg border-2 border-gray-300 bg-white py-3 font-semibold text-gray-700 transition-all hover:bg-gray-50 ${
+                onNavigateToNextLesson ? 'flex-1' : 'flex-1'
+              }`}
             >
               Về Danh Sách Bài Học
             </button>

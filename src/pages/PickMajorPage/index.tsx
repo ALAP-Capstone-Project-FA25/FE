@@ -88,7 +88,7 @@ export default function ALevelLandingPage() {
   };
   const handleDiscoverTest = () => {
     console.log('Navigate to major discovery test');
-    router.push("/entry-test-list")
+    router.push('/entry-test-list');
   };
 
   const features = [
@@ -156,12 +156,12 @@ export default function ALevelLandingPage() {
               </div>
 
               <h1 className="mb-4 text-5xl font-bold text-white lg:text-6xl">
-                Chọn Chuyên Ngành A-Level
+                Chọn nhóm môn
               </h1>
 
               <p className="mx-auto mb-8 max-w-2xl text-lg text-gray-400">
-                Lựa chọn chuyên ngành phù hợp và bắt đầu hành trình chinh phục
-                kỳ thi A-Level
+                Lựa chọn nhóm môn phù hợp và bắt đầu hành trình chinh phục kỳ
+                thi A-Level
               </p>
 
               {/* CTA: Test Button */}
@@ -170,7 +170,7 @@ export default function ALevelLandingPage() {
                 className="group inline-flex items-center gap-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-8 py-4 font-bold text-white shadow-2xl shadow-orange-500/30 transition-all hover:scale-105 hover:from-orange-600 hover:to-orange-700"
               >
                 <Sparkles className="h-6 w-6" />
-                <span>Chưa biết chọn gì? Làm bài test tìm ngành phù hợp</span>
+                <span>Chưa biết chọn gì? Làm bài test tìm môn học phù hợp</span>
                 <ArrowRight className="h-5 w-5 transition-transform group-hover:translate-x-1" />
               </button>
             </motion.div>
@@ -180,16 +180,15 @@ export default function ALevelLandingPage() {
               <div className="rounded-3xl border border-white/10 bg-white/5 py-16 text-center backdrop-blur-sm">
                 <BookOpen className="mx-auto mb-4 h-16 w-16 text-gray-600" />
                 <p className="text-lg text-gray-400">
-                  Đang tải thông tin chuyên ngành...
+                  Đang tải thông tin nhóm môn...
                 </p>
               </div>
             ) : (
               <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {listMajor.slice(0, 6).map((major: Major, index: number) => (
-                  <motion.button
+                  <motion.div
                     key={major.id}
-                    onClick={() => handleMajorClick(major)}
-                    className="group relative overflow-hidden rounded-2xl border-2 border-white/10 bg-white/5 p-6 text-left backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:border-orange-500/50 hover:bg-white/10"
+                    className="group relative overflow-hidden rounded-2xl border-2 border-white/10 bg-white/5 backdrop-blur-sm transition-all duration-300 hover:scale-[1.02] hover:border-orange-500/50 hover:bg-white/10"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
@@ -197,7 +196,7 @@ export default function ALevelLandingPage() {
                     {/* Gradient Overlay */}
                     <div className="absolute inset-0 bg-gradient-to-br from-orange-500/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
 
-                    <div className="relative">
+                    <div className="relative p-6">
                       {/* Icon & Badge */}
                       <div className="mb-4 flex items-center justify-between">
                         <div className="rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 p-3 shadow-lg">
@@ -206,7 +205,7 @@ export default function ALevelLandingPage() {
 
                         <div className="rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1">
                           <span className="text-xs font-semibold text-blue-400">
-                            {major.categories.length} môn học
+                            {major.categories.length} môn
                           </span>
                         </div>
                       </div>
@@ -221,13 +220,33 @@ export default function ALevelLandingPage() {
                         {major.description}
                       </p>
 
-                      {/* Action */}
-                      <div className="flex items-center gap-2 text-sm font-semibold text-orange-400">
-                        <span>Chọn ngay</span>
-                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                      {/* Categories List */}
+                      <div className="mb-4 space-y-2">
+                        <h4 className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+                          Các môn học:
+                        </h4>
+                        <div className="flex flex-wrap gap-2">
+                          {major.categories.map((category) => (
+                            <div
+                              key={category.id}
+                              className="rounded-lg border border-white/20 bg-white/5 px-3 py-1.5 text-xs text-gray-300 backdrop-blur-sm transition-colors hover:border-orange-500/50 hover:bg-orange-500/10 hover:text-orange-400"
+                            >
+                              {category.name}
+                            </div>
+                          ))}
+                        </div>
                       </div>
+
+                      {/* Action Button */}
+                      <button
+                        onClick={() => handleMajorClick(major)}
+                        className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-orange-500/20 to-orange-600/20 px-4 py-3 text-sm font-semibold text-orange-400 transition-all hover:from-orange-500/30 hover:to-orange-600/30"
+                      >
+                        <span>Xem chi tiết</span>
+                        <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
+                      </button>
                     </div>
-                  </motion.button>
+                  </motion.div>
                 ))}
               </div>
             )}
@@ -381,7 +400,7 @@ export default function ALevelLandingPage() {
             {/* Description Section */}
             <div className="flex-shrink-0 border-b border-orange-100 bg-orange-50 px-6 py-5">
               <h4 className="mb-2 text-sm font-semibold text-orange-900">
-                Mô tả chuyên ngành
+                Mô tả môn
               </h4>
               <p className="leading-relaxed text-gray-700">
                 {selectedMajor.description}
@@ -392,10 +411,10 @@ export default function ALevelLandingPage() {
             <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
               <div className="flex-shrink-0 px-6 pb-3 pt-6">
                 <h4 className="mb-1 text-lg font-bold text-gray-900">
-                  Các môn học trong chuyên ngành
+                  Các môn học trong môn
                 </h4>
                 <p className="text-sm text-gray-600">
-                  Danh sách tất cả môn học trong khối ngành
+                  Danh sách tất cả môn học trong môn
                 </p>
               </div>
 
@@ -432,7 +451,7 @@ export default function ALevelLandingPage() {
                 className="mb-3 flex w-full items-center justify-center gap-3 rounded-xl bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-4 font-bold text-white shadow-lg shadow-orange-200 transition-all hover:scale-[1.02] hover:from-orange-600 hover:to-orange-700"
               >
                 <CheckCircle2 className="h-6 w-6" />
-                <span>Chọn Chuyên Ngành Này</span>
+                <span>Chọn Nhóm Môn Này</span>
                 <ArrowRight className="h-6 w-6" />
               </button>
 
@@ -441,7 +460,7 @@ export default function ALevelLandingPage() {
                 className="flex w-full items-center justify-center gap-2 rounded-xl border-2 border-gray-300 bg-white px-6 py-3 font-semibold text-gray-700 transition-all duration-300 hover:border-orange-400 hover:bg-gray-50 hover:text-orange-600"
               >
                 <Sparkles className="h-5 w-5" />
-                <span>Làm Bài Test Tìm Ngành Phù Hợp</span>
+                <span>Làm Bài Test Tìm Môn Học Phù Hợp</span>
               </button>
             </div>
           </motion.div>
@@ -472,9 +491,7 @@ export default function ALevelLandingPage() {
                 🎉 Chúc Mừng!
               </h2>
 
-              <p className="mb-2 text-xl text-gray-700">
-                Bạn đã chọn chuyên ngành
-              </p>
+              <p className="mb-2 text-xl text-gray-700">Bạn đã chọn nhóm môn</p>
 
               <p className="mb-6 text-2xl font-bold text-orange-600">
                 {confirmedMajor.name}

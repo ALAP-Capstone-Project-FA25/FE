@@ -95,6 +95,37 @@ export const columns: ColumnDef<EventTicket>[] = [
     }
   },
   {
+    accessorKey: 'bankInfo',
+    header: 'Thông tin hoàn tiền',
+    enableSorting: false,
+    cell: ({ row }) => {
+      const ticket = row.original;
+      if (!ticket.bankAccountNumber && !ticket.bankName && !ticket.bankAccountHolderName) {
+        return <span className="text-gray-400">Chưa có thông tin</span>;
+      }
+
+      return (
+        <div className="space-y-1 text-sm">
+          {ticket.bankAccountNumber && (
+            <div>
+              <span className="font-medium">Số TK:</span> {ticket.bankAccountNumber}
+            </div>
+          )}
+          {ticket.bankName && (
+            <div>
+              <span className="font-medium">Ngân hàng:</span> {ticket.bankName}
+            </div>
+          )}
+          {ticket.bankAccountHolderName && (
+            <div>
+              <span className="font-medium">Chủ TK:</span> {ticket.bankAccountHolderName}
+            </div>
+          )}
+        </div>
+      );
+    }
+  },
+  {
     accessorKey: 'createdAt',
     header: 'Ngày tạo',
     enableSorting: true,

@@ -138,20 +138,7 @@ export const columns: ColumnDef<UserRow>[] = [
     enableSorting: false,
     cell: ({ row }) => row.original.phone || '—'
   },
-  {
-    id: 'gender',
-    header: 'Giới tính',
-    enableSorting: false,
-    cell: ({ row }) => genderText(row.original.gender)
-  },
 
-  {
-    id: 'lastLogin',
-    header: 'Đăng nhập gần nhất',
-    enableSorting: true,
-    cell: ({ row }) =>
-      formatDateTime(getLatestLogin(row.original.loginHistories))
-  },
   {
     id: 'status',
     header: 'Trạng thái',

@@ -19,7 +19,8 @@ export default function LessonInfo({
   onDeleteNote,
   onPrevLesson,
   onNextLesson,
-  onAskNote
+  onAskNote,
+  isReadOnly = false
 }: {
   currentLesson: Lesson | null;
   currentQuizTitle?: string;
@@ -35,6 +36,7 @@ export default function LessonInfo({
   onPrevLesson: () => void;
   onNextLesson: () => void;
   onAskNote: (note: Note) => void;
+  isReadOnly: boolean;
 }) {
   const [isChatOpen, setIsChatOpen] = useState(false);
   const [selectedNote, setSelectedNote] = useState<Note | null>(null);
@@ -111,41 +113,47 @@ export default function LessonInfo({
                 />
               </div>
 
-              <div className="mt-8 flex items-center gap-4 border-t border-gray-800 pt-6">
-                <button
-                  className="rounded-lg border border-gray-700 bg-gray-800 px-6 py-2 text-gray-300 transition-colors hover:bg-gray-700"
-                  onClick={onPrevLesson}
-                >
-                  <ChevronLeft className="mr-2 inline h-4 w-4" />
-                  BÀI TRƯỚC
-                </button>
-                <button
-                  className="rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-2 text-white shadow-lg shadow-orange-500/20 transition-all hover:from-orange-600 hover:to-orange-700 hover:shadow-orange-500/30"
-                  onClick={onNextLesson}
-                >
-                  BÀI TIẾP THEO
-                  <ChevronRight className="ml-2 inline h-4 w-4" />
-                </button>
-              </div>
+              {!isReadOnly && (
+                <div className="mt-8 flex items-center gap-4 border-t border-gray-800 pt-6">
+                  <button
+                    className="rounded-lg border border-gray-700 bg-gray-800 px-6 py-2 text-gray-300 transition-colors hover:bg-gray-700"
+                    onClick={onPrevLesson}
+                  >
+                    <ChevronLeft className="mr-2 inline h-4 w-4" />
+                    BÀI TRƯỚC
+                  </button>
+                  <button
+                    className="rounded-lg bg-gradient-to-r from-orange-500 to-orange-600 px-6 py-2 text-white shadow-lg shadow-orange-500/20 transition-all hover:from-orange-600 hover:to-orange-700 hover:shadow-orange-500/30"
+                    onClick={onNextLesson}
+                  >
+                    BÀI TIẾP THEO
+                    <ChevronRight className="ml-2 inline h-4 w-4" />
+                  </button>
+                </div>
+              )}
             </>
           )}
         </div>
       </div>
 
-      <div
-        className="fixed bottom-0 right-0 w-[250px] p-4"
-        onClick={() => setIsChatOpen(true)}
-      >
-        <button className="w-full rounded-full bg-orange-500 py-3 font-semibold text-white transition-colors hover:bg-orange-600">
-          Hỏi đáp
-        </button>
-      </div>
-      <ChatDialog
-        isOpen={isChatOpen}
-        onClose={() => setIsChatOpen(false)}
-        note={selectedNote}
-        lessonTitle={currentLesson?.title}
-      />
+      {!isReadOnly && (
+        <div>
+          <div
+            className="fixed bottom-0 right-0 w-[250px] p-4"
+            onClick={() => setIsChatOpen(true)}
+          >
+            <button className="w-full rounded-full bg-orange-500 py-3 font-semibold text-white transition-colors hover:bg-orange-600">
+              Hỏi đáp
+            </button>
+          </div>
+          <ChatDialog
+            isOpen={isChatOpen}
+            onClose={() => setIsChatOpen(false)}
+            note={selectedNote}
+            lessonTitle={currentLesson?.title}
+          />
+        </div>
+      )}
     </>
   );
 }

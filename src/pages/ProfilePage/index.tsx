@@ -6,7 +6,7 @@ import LearningStatisticsCharts from './LearningStatisticsCharts';
 import LessonRecommendationsSection from './LessonRecommendationsSection';
 import { useGetProfile } from '@/queries/auth.query';
 import { useMemo, useState, useCallback } from 'react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Tabs, TabsContent } from '@/components/ui/tabs';
 import { useGetAdaptiveLessonRecommendations } from '@/queries/adaptive-recommendation.query';
 import { Loader2 } from 'lucide-react';
 import LessonViewerSheet from '@/pages/AdaptiveRecommendations/LessonViewerSheet';
@@ -84,21 +84,12 @@ export default function Profile() {
       <ProfileHeader profile={profile} />
 
       <div className="w-full">
-        <div className="flex items-center">
+        <div className="w-full">
           <ContributionHeatmap loginHistories={profile?.loginHistories} />
         </div>
         {/* Tabs Section */}
         <section className="mx-auto max-w-7xl px-4 py-8 lg:px-8">
           <Tabs defaultValue="analysis" className="w-full">
-            <TabsList className="mb-8 grid w-full max-w-md grid-cols-2">
-              <TabsTrigger value="analysis" className="text-base">
-                📊 Phân tích
-              </TabsTrigger>
-              <TabsTrigger value="courses" className="text-base">
-                📚 Khóa học đã đăng ký
-              </TabsTrigger>
-            </TabsList>
-
             <TabsContent value="analysis" className="mt-0">
               {isLoadingLessons ? (
                 <div className="flex items-center justify-center py-12">

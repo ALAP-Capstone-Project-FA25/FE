@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -53,6 +53,53 @@ const getVNTime = () => {
   return vnTime;
 };
 
+// Helper function to get tomorrow in VN time (UTC+7)
+const getVNTomorrow = () => {
+  const tomorrow = getVNTime();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  tomorrow.setHours(0, 0, 0, 0);
+  return tomorrow;
+};
+
+// Helper function to get tomorrow's date string in VN timezone for datetime-local input
+// datetime-local uses browser's local timezone, so we calculate tomorrow in VN timezone
+// and convert it to a format that datetime-local can understand
+const getTomorrowVNForInput = (): string => {
+  // Get current UTC timestamp
+  const now = new Date();
+  const nowUTC = now.getTime() + now.getTimezoneOffset() * 60000;
+
+  // Get current VN time (UTC+7) - add 7 hours
+  const vnOffsetMs = 7 * 60 * 60 * 1000;
+  const nowVNMs = nowUTC + vnOffsetMs;
+  const nowVNDate = new Date(nowVNMs);
+
+  // Get tomorrow at 00:00 in VN timezone
+  // Extract year, month, day from VN time
+  const vnYear = nowVNDate.getUTCFullYear();
+  const vnMonth = nowVNDate.getUTCMonth();
+  const vnDay = nowVNDate.getUTCDate();
+
+  // Create tomorrow 00:00 in VN timezone (UTC+7)
+  const tomorrowVNUTC = Date.UTC(vnYear, vnMonth, vnDay + 1, 0, 0, 0, 0);
+
+  // Convert VN time to UTC (subtract 7 hours)
+  const tomorrowUTCTimestamp = tomorrowVNUTC - vnOffsetMs;
+
+  // Create Date object from UTC timestamp
+  // When formatted, it will use local timezone
+  const tomorrowLocal = new Date(tomorrowUTCTimestamp);
+
+  // Format for datetime-local (YYYY-MM-DDTHH:mm)
+  const year = tomorrowLocal.getFullYear();
+  const month = String(tomorrowLocal.getMonth() + 1).padStart(2, '0');
+  const day = String(tomorrowLocal.getDate()).padStart(2, '0');
+  const hours = String(tomorrowLocal.getHours()).padStart(2, '0');
+  const minutes = String(tomorrowLocal.getMinutes()).padStart(2, '0');
+
+  return `${year}-${month}-${day}T${hours}:${minutes}`;
+};
+
 // Helper function to convert date string to VN time for comparison
 const toVNTime = (dateString: string) => {
   const date = new Date(dateString);
@@ -73,11 +120,10 @@ const formSchema = z
       .min(1, 'Ngày bắt đầu là bắt buộc')
       .refine((date) => {
         const startDate = toVNTime(date);
-        const now = getVNTime();
-        now.setHours(0, 0, 0, 0); // Reset time to start of day for comparison
-        startDate.setHours(0, 0, 0, 0);
-        return startDate >= now;
-      }, 'Ngày bắt đầu phải từ hôm nay trở đi')
+        const tomorrow = getVNTomorrow();
+        startDate.setHours(0, 0, 0, 0); // Reset time to start of day for comparison
+        return startDate >= tomorrow;
+      }, 'Ngày bắt đầu phải lớn hơn ngày hiện tại ít nhất 1 ngày')
       .refine((date) => {
         const startDate = toVNTime(date);
         const maxDate = getVNTime();
@@ -96,21 +142,27 @@ const formSchema = z
       }, 'Ngày kết thúc phải từ hôm nay trở đi'),
     meetingLink: z
       .string()
-      .url('Link họp không hợp lệ')
-      .optional()
-      .or(z.literal('')),
+      .min(1, 'Link tham gia là bắt buộc')
+      .url('Link họp không hợp lệ'),
     commissionRate: z
-      .number()
-      .min(0, 'Tỷ lệ hoa hồng phải >= 0')
+      .number({
+        required_error: 'Tỷ lệ hoa hồng là bắt buộc',
+        invalid_type_error: 'Tỷ lệ hoa hồng phải là số'
+      })
+      .min(0.01, 'Tỷ lệ hoa hồng là bắt buộc và phải > 0')
       .max(100, 'Tỷ lệ hoa hồng phải <= 100'),
-    amount: z.number().min(0, 'Số tiền phải >= 0'),
+    amount: z
+      .number({
+        required_error: 'Giá vé là bắt buộc',
+        invalid_type_error: 'Giá vé phải là số'
+      })
+      .min(0.01, 'Giá vé là bắt buộc và phải > 0'),
     status: z.number(),
     speakerId: z.number().min(1, 'Vui lòng chọn diễn giả'),
     videoUrl: z
       .string()
+      .min(1, 'Video giới thiệu là bắt buộc')
       .url('Link video không hợp lệ')
-      .optional()
-      .or(z.literal(''))
   })
   .refine(
     (data) => {
@@ -165,6 +217,11 @@ export default function CreateEventForm() {
   const [videoPreviewUrl, setVideoPreviewUrl] = useState<string | null>(null);
   const [startDateValue, setStartDateValue] = useState<string>('');
 
+  // Get tomorrow's date in VN timezone (UTC+7) for datetime-local input
+  const tomorrowMinValue = useMemo(() => {
+    return getTomorrowVNForInput();
+  }, []);
+
   const { mutateAsync: createUpdateEvent, isPending } = useCreateUpdateEvent();
   const { data: speakersData } = useGetUsersByPagingByRole(
     1,
@@ -193,12 +250,40 @@ export default function CreateEventForm() {
 
   const onSubmit = async (values: FormValues) => {
     try {
+      // Validate image URL
+      if (!imageUrl || imageUrl.trim() === '') {
+        toast({
+          title: 'Lỗi',
+          description: 'Hình ảnh sự kiện là bắt buộc',
+          variant: 'destructive'
+        });
+        return;
+      }
+
+      // Convert dates from VN time (UTC+7) to UTC before sending
+      // datetime-local input gives us a string without timezone info
+      // We treat it as VN time and convert to UTC by subtracting 7 hours
+      const convertVNTimeToUTC = (dateString: string): string => {
+        // Parse the datetime-local string (format: "YYYY-MM-DDTHH:mm")
+        // Treat it as VN time (UTC+7) and convert to UTC
+        const [datePart, timePart] = dateString.split('T');
+        const [year, month, day] = datePart.split('-').map(Number);
+        const [hours, minutes] = timePart.split(':').map(Number);
+
+        // Create date in VN timezone (UTC+7)
+        // We create a UTC date and subtract 7 hours to get the VN time representation
+        const vnDate = new Date(Date.UTC(year, month - 1, day, hours, minutes));
+        // Convert VN time to UTC by subtracting 7 hours
+        const utcDate = new Date(vnDate.getTime() - 7 * 60 * 60 * 1000);
+        return utcDate.toISOString();
+      };
+
       const payload = {
         id: 0,
         ...values,
-        imageUrls: imageUrl || '',
-        startDate: new Date(values.startDate).toISOString(),
-        endDate: new Date(values.endDate).toISOString()
+        imageUrls: imageUrl,
+        startDate: convertVNTimeToUTC(values.startDate),
+        endDate: convertVNTimeToUTC(values.endDate)
       };
 
       const [err] = await createUpdateEvent(payload);
@@ -364,17 +449,6 @@ export default function CreateEventForm() {
                   const diffInHours =
                     (startDate.getTime() - now.getTime()) / (1000 * 60 * 60);
 
-                  if (diffInHours < 24 && diffInHours > 0) {
-                    return (
-                      <div className="mb-4 rounded-lg border border-yellow-200 bg-yellow-50 p-3">
-                        <p className="text-sm text-yellow-800">
-                          <strong>⚠️ Lưu ý:</strong> Sự kiện được lên lịch trong
-                          vòng 24 giờ tới. Hãy đảm bảo bạn đã chuẩn bị đầy đủ và
-                          thông báo cho người tham gia.
-                        </p>
-                      </div>
-                    );
-                  }
                   return null;
                 })()}
 
@@ -398,11 +472,12 @@ export default function CreateEventForm() {
                             setStartDateValue(e.target.value);
                           }}
                           className="focus:border-orange-500 focus:ring-orange-500"
-                          min={new Date().toISOString().slice(0, 16)}
+                          min={tomorrowMinValue}
                         />
                       </FormControl>
                       <FormDescription className="text-gray-500">
-                        Chọn ngày và giờ bắt đầu sự kiện (từ hôm nay trở đi)
+                        Chọn ngày và giờ bắt đầu sự kiện (phải từ ngày mai trở
+                        đi)
                       </FormDescription>
                       <FormMessage className="text-orange-600" />
                     </FormItem>
@@ -424,10 +499,7 @@ export default function CreateEventForm() {
                           type="datetime-local"
                           {...field}
                           className="focus:border-orange-500 focus:ring-orange-500"
-                          min={
-                            startDateValue ||
-                            new Date().toISOString().slice(0, 16)
-                          }
+                          min={startDateValue || tomorrowMinValue}
                         />
                       </FormControl>
                       <FormDescription className="text-gray-500">
@@ -454,7 +526,7 @@ export default function CreateEventForm() {
               {/* Image Upload */}
               <div>
                 <FormLabel className="mb-3 block font-medium text-gray-700">
-                  Hình ảnh sự kiện
+                  Hình ảnh sự kiện <span className="text-orange-600">*</span>
                 </FormLabel>
                 <SingleFileUpload
                   onFileUploaded={(url) => setImageUrl(url)}
@@ -472,6 +544,11 @@ export default function CreateEventForm() {
                     />
                   </div>
                 )}
+                {!imageUrl && (
+                  <p className="mt-2 text-sm text-orange-600">
+                    Hình ảnh sự kiện là bắt buộc
+                  </p>
+                )}
               </div>
 
               {/* Video URL */}
@@ -482,7 +559,8 @@ export default function CreateEventForm() {
                   <FormItem>
                     <FormLabel className="flex items-center gap-2 font-medium text-gray-700">
                       <Video className="h-4 w-4 text-orange-600" />
-                      Video giới thiệu
+                      Video giới thiệu{' '}
+                      <span className="text-orange-600">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -496,7 +574,7 @@ export default function CreateEventForm() {
                       />
                     </FormControl>
                     <FormDescription className="text-gray-500">
-                      Dán link video giới thiệu (nếu có)
+                      Dán link video giới thiệu
                     </FormDescription>
                     <FormMessage className="text-orange-600" />
                   </FormItem>
@@ -527,7 +605,7 @@ export default function CreateEventForm() {
                   <FormItem>
                     <FormLabel className="flex items-center gap-2 font-medium text-gray-700">
                       <Link className="h-4 w-4 text-orange-600" />
-                      Link tham gia
+                      Link tham gia <span className="text-orange-600">*</span>
                     </FormLabel>
                     <FormControl>
                       <Input
@@ -564,16 +642,20 @@ export default function CreateEventForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="font-medium text-gray-700">
-                        Giá vé (VNĐ)
+                        Giá vé (VNĐ) <span className="text-orange-600">*</span>
                       </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
-                          placeholder="0"
+                          placeholder="Nhập giá vé"
                           {...field}
-                          onChange={(e) =>
-                            field.onChange(parseFloat(e.target.value) || 0)
-                          }
+                          value={field.value || ''}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            field.onChange(
+                              value === '' ? 0 : parseFloat(value) || 0
+                            );
+                          }}
                           className="focus:border-orange-500 focus:ring-orange-500"
                         />
                       </FormControl>
@@ -589,21 +671,26 @@ export default function CreateEventForm() {
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel className="font-medium text-gray-700">
-                        Tỷ lệ hoa hồng (%)
+                        Tỷ lệ hoa hồng (%){' '}
+                        <span className="text-orange-600">*</span>
                       </FormLabel>
                       <FormControl>
                         <Input
                           type="number"
-                          placeholder="0"
+                          placeholder="Nhập tỷ lệ hoa hồng"
                           {...field}
-                          onChange={(e) =>
-                            field.onChange(parseFloat(e.target.value) || 0)
-                          }
+                          value={field.value || ''}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            field.onChange(
+                              value === '' ? 0 : parseFloat(value) || 0
+                            );
+                          }}
                           className="focus:border-orange-500 focus:ring-orange-500"
                         />
                       </FormControl>
                       <FormDescription className="text-gray-500">
-                        Từ 0% đến 100%
+                        Từ 0.01% đến 100%
                       </FormDescription>
                       <FormMessage className="text-orange-600" />
                     </FormItem>
