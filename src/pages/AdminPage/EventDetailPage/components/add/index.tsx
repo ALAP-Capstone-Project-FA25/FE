@@ -44,111 +44,29 @@ import { useCreateUpdateEvent } from '@/queries/event.query';
 import { useGetUsersByPagingByRole } from '@/queries/user.query';
 import { toast } from '@/components/ui/use-toast';
 
-// Helper function to get current VN time (UTC+7)
-const getVNTime = () => {
-  const now = new Date();
-  const vnOffset = 7 * 60; // UTC+7 in minutes
-  const utc = now.getTime() + now.getTimezoneOffset() * 60000;
-  const vnTime = new Date(utc + vnOffset * 60000);
-  return vnTime;
-};
-
-// Helper function to convert date string to VN time for comparison
-const toVNTime = (dateString: string) => {
-  const date = new Date(dateString);
-  // If the date string doesn't include timezone, treat it as local time
-  // Then convert to VN timezone (UTC+7)
-  const vnOffset = 7 * 60; // UTC+7 in minutes
-  const utc = date.getTime() - date.getTimezoneOffset() * 60000;
-  const vnTime = new Date(utc + vnOffset * 60000);
-  return vnTime;
-};
-
-const formSchema = z
-  .object({
-    title: z.string().min(1, 'Tiêu đề là bắt buộc').max(200, 'Tiêu đề quá dài'),
-    description: z.string().min(10, 'Mô tả phải có ít nhất 10 ký tự'),
-    startDate: z
-      .string()
-      .min(1, 'Ngày bắt đầu là bắt buộc')
-      .refine((date) => {
-        const startDate = toVNTime(date);
-        const now = getVNTime();
-        now.setHours(0, 0, 0, 0); // Reset time to start of day for comparison
-        startDate.setHours(0, 0, 0, 0);
-        return startDate >= now;
-      }, 'Ngày bắt đầu phải từ hôm nay trở đi')
-      .refine((date) => {
-        const startDate = toVNTime(date);
-        const maxDate = getVNTime();
-        maxDate.setFullYear(maxDate.getFullYear() + 2); // Maximum 2 years in future
-        return startDate <= maxDate;
-      }, 'Ngày bắt đầu không được quá 2 năm trong tương lai'),
-    endDate: z
-      .string()
-      .min(1, 'Ngày kết thúc là bắt buộc')
-      .refine((date) => {
-        const endDate = toVNTime(date);
-        const now = getVNTime();
-        now.setHours(0, 0, 0, 0);
-        endDate.setHours(0, 0, 0, 0);
-        return endDate >= now;
-      }, 'Ngày kết thúc phải từ hôm nay trở đi'),
-    meetingLink: z
-      .string()
-      .url('Link họp không hợp lệ')
-      .optional()
-      .or(z.literal('')),
-    commissionRate: z
-      .number()
-      .min(0, 'Tỷ lệ hoa hồng phải >= 0')
-      .max(100, 'Tỷ lệ hoa hồng phải <= 100'),
-    amount: z.number().min(0, 'Số tiền phải >= 0'),
-    status: z.number(),
-    speakerId: z.number().min(1, 'Vui lòng chọn diễn giả'),
-    videoUrl: z
-      .string()
-      .url('Link video không hợp lệ')
-      .optional()
-      .or(z.literal(''))
-  })
-  .refine(
-    (data) => {
-      const startDate = new Date(data.startDate);
-      const endDate = new Date(data.endDate);
-      return endDate > startDate;
-    },
-    {
-      message: 'Ngày kết thúc phải sau ngày bắt đầu',
-      path: ['endDate']
-    }
-  )
-  .refine(
-    (data) => {
-      const startDate = new Date(data.startDate);
-      const endDate = new Date(data.endDate);
-      const diffInHours =
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60);
-      return diffInHours >= 1;
-    },
-    {
-      message: 'Sự kiện phải kéo dài ít nhất 1 giờ',
-      path: ['endDate']
-    }
-  )
-  .refine(
-    (data) => {
-      const startDate = new Date(data.startDate);
-      const endDate = new Date(data.endDate);
-      const diffInDays =
-        (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
-      return diffInDays <= 30;
-    },
-    {
-      message: 'Sự kiện không được kéo dài quá 30 ngày',
-      path: ['endDate']
-    }
-  );
+const formSchema = z.object({
+  title: z.string().min(1, 'Tiêu đề là bắt buộc').max(200, 'Tiêu đề quá dài'),
+  description: z.string().min(10, 'Mô tả phải có ít nhất 10 ký tự'),
+  startDate: z.string().min(1, 'Ngày bắt đầu là bắt buộc'),
+  endDate: z.string().min(1, 'Ngày kết thúc là bắt buộc'),
+  meetingLink: z
+    .string()
+    .url('Link họp không hợp lệ')
+    .optional()
+    .or(z.literal('')),
+  commissionRate: z
+    .number()
+    .min(0, 'Tỷ lệ hoa hồng phải >= 0')
+    .max(100, 'Tỷ lệ hoa hồng phải <= 100'),
+  amount: z.number().min(0, 'Số tiền phải >= 0'),
+  status: z.number(),
+  speakerId: z.number().min(1, 'Vui lòng chọn diễn giả'),
+  videoUrl: z
+    .string()
+    .url('Link video không hợp lệ')
+    .optional()
+    .or(z.literal(''))
+});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -311,9 +229,7 @@ export default function CreateEventForm() {
                     </FormLabel>
                     <Select
                       onValueChange={(value) => field.onChange(parseInt(value))}
-                      value={
-                        field.value > 0 ? field.value.toString() : undefined
-                      }
+                      value={field.value?.toString()}
                     >
                       <FormControl>
                         <SelectTrigger className="focus:border-orange-500 focus:ring-orange-500">

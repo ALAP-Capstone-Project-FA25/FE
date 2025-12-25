@@ -6,12 +6,20 @@ import {
   CardHeader,
   CardTitle
 } from '@/components/ui/card';
+import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import {
   BookOpen,
   Users,
   TrendingUp,
+  Clock,
+  Search,
   Plus,
+  Eye,
+  Edit,
+  Trash2,
+  Star,
   Calendar,
   DollarSign,
   Target,
@@ -38,10 +46,8 @@ import {
   useGetStudentGrowthChart,
   useGetCourseDistribution,
   useGetTopCourses,
+  useGetRecentCourses
 } from '@/queries/dashboard.query';
-import { useGetUsersByPagingByRole } from '@/queries/user.query';
-import { USER_ROLE } from '@/constants/data';
-import AccountStatsCard from '@/components/admin/AccountStatsCard';
 import __helpers from '@/helpers';
 
 // Register Chart.js components
@@ -59,6 +65,8 @@ ChartJS.register(
 );
 
 const CourseDashboard = () => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedFilter, setSelectedFilter] = useState('all');
   const [selectedPeriod, setSelectedPeriod] = useState('month');
 
   // API Queries
@@ -66,12 +74,8 @@ const CourseDashboard = () => {
   const { data: revenueChart, isLoading: isLoadingRevenue } = useGetRevenueChart(selectedPeriod);
   const { data: studentGrowth, isLoading: isLoadingStudents } = useGetStudentGrowthChart();
   const { data: courseDistribution, isLoading: isLoadingDistribution } = useGetCourseDistribution();
-  const { data: topCourses } = useGetTopCourses();
-  
-  // Account stats queries
-  const { data: studentsData } = useGetUsersByPagingByRole(1, 1000, '', USER_ROLE.USER);
-  const { data: mentorsData } = useGetUsersByPagingByRole(1, 1000, '', 3); // Mentor role = 3
-  const { data: adminsData } = useGetUsersByPagingByRole(1, 1000, '', 1); // Admin role = 1
+  const { data: topCourses, isLoading: isLoadingTopCourses } = useGetTopCourses();
+  const { data: recentCourses, isLoading: isLoadingRecentCourses } = useGetRecentCourses();
 
   // Chart data configurations
   const revenueChartData = {
@@ -301,22 +305,6 @@ const CourseDashboard = () => {
     }
   };
 
-  // Calculate account stats
-  const calculateAccountStats = (users: any[]) => {
-    if (!users) return { total: 0, active: 0, banned: 0, unverified: 0 };
-    
-    const total = users.length;
-    const active = users.filter(u => u.isActive === true).length;
-    const banned = users.filter(u => u.isActive === false).length;
-    const unverified = users.filter(u => u.emailConfirmed === false).length;
-    
-    return { total, active, banned, unverified };
-  };
-
-  const studentStats = calculateAccountStats(studentsData?.listObjects);
-  const mentorStats = calculateAccountStats(mentorsData?.listObjects);
-  const adminStats = calculateAccountStats(adminsData?.listObjects);
-
   // Stats data from API
   const stats = [
     {
@@ -353,9 +341,34 @@ const CourseDashboard = () => {
     }
   ];
 
-  
+  // Courses data from API
+  const courses = recentCourses || [];
 
- 
+  const getStatusColor = (status) => {
+    switch (status) {
+      case 'active':
+        return 'bg-green-100 text-green-700 border-green-200';
+      case 'draft':
+        return 'bg-gray-100 text-gray-700 border-gray-200';
+      case 'archived':
+        return 'bg-red-100 text-red-700 border-red-200';
+      default:
+        return 'bg-gray-100 text-gray-700 border-gray-200';
+    }
+  };
+
+  const getStatusText = (status) => {
+    switch (status) {
+      case 'active':
+        return 'Đang hoạt động';
+      case 'draft':
+        return 'Nháp';
+      case 'archived':
+        return 'Đã lưu trữ';
+      default:
+        return status;
+    }
+  };
 
   // Loading state
   if (isLoadingStats || isLoadingRevenue || isLoadingStudents || isLoadingDistribution) {
@@ -447,33 +460,6 @@ const CourseDashboard = () => {
               </Card>
             );
           })}
-        </div>
-
-        {/* Account Stats Section */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-lg font-semibold text-gray-900">Thống kê tài khoản</h3>
-            <Button variant="outline" size="sm" className="text-orange-600 border-orange-200 hover:bg-orange-50">
-              Xem chi tiết
-            </Button>
-          </div>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <AccountStatsCard
-              data={studentStats}
-              title="Học viên"
-              type="students"
-            />
-            <AccountStatsCard
-              data={mentorStats}
-              title="Mentor"
-              type="mentors"
-            />
-            <AccountStatsCard
-              data={adminStats}
-              title="Quản trị viên"
-              type="admins"
-            />
-          </div>
         </div>
 
         {/* Charts Section */}
